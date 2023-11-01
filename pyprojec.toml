@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=60", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "redbb"
+authors = [
+    { name = "TeiaLabs", email = "contato@teialabs.com" }
+]
+description = "TeiaLabs MongoDB Driver Object Oriented Abstraction"
+readme = "README.md"
+requires-python= ">=3.11"
+keywords = ["b", "mongo", "odm", "database"]
+dynamic = ["version"]
+dependencies = [
+    "pymongo",
+    "pydantic^2",
+]

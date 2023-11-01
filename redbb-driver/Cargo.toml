@@ -1,0 +1,15 @@
+[package]
+name = "redbb_driver"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "redbb_driver"
+crate-type = ["cdylib"]
+
+[dependencies]
+tokio = "1.33"
+mongodb = "2.7.0"
+serde = "1.0.190"
+pyo3 = { version = "0.19", features = ["extension-module"] }
+pyo3-asyncio = { version = "0.19", features = ["attributes", "tokio-runtime"] }
