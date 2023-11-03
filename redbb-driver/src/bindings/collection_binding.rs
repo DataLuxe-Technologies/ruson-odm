@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{borrow::BorrowMut, sync::Arc};
 
 use mongodb::{
     self,
@@ -11,158 +11,95 @@ use pyo3::{
     types::{self, PyFloat, PyString},
 };
 
-use super::client_binding::ClientSession;
 use crate::interface;
 
+use super::{client_binding::ClientSession, results_binding};
+
 use super::bson_binding::Bson;
-use super::results_binding::InsertOneResult;
+use super::document_binding::Document;
+use super::index_binding::IndexModel;
+use super::results_binding::*;
 
-#[pyclass]
-pub struct Collection {
-    collection: mongodb::Collection<bson::Document>,
-}
-
-impl Collection {
-    pub(crate) fn new(collection: mongodb::Collection<bson::Document>) -> Self {
-        Collection { collection }
-    }
-}
+#[pyclass(frozen)]
+#[derive(Clone)]
+pub struct Collection(pub mongodb::Collection<bson::Document>);
 
 #[pyfunction]
-pub fn get_insert_one(py: Python) -> Vec<InsertOneResult> {
-    return vec![
-        InsertOneResult {
-            inserted_id: Bson(bson::Bson::Double(10.0)).into_py(py),
-        },
-        InsertOneResult {
-            inserted_id: Bson(bson::Bson::String("batata".to_owned())).into_py(py),
-        },
-        InsertOneResult {
-            inserted_id: Bson(bson::Bson::Array(vec![bson::Bson::Double(10.0)])).into_py(py),
-        },
-        InsertOneResult {
-            inserted_id: Bson(bson::Bson::Int32(10)).into_py(py),
-        },
-        InsertOneResult {
-            inserted_id: Bson(bson::Bson::Int64(10)).into_py(py),
-        },
-        InsertOneResult {
-            inserted_id: Bson(bson::Bson::Boolean(true)).into_py(py),
-        },
-        InsertOneResult {
-            inserted_id: Bson(bson::Bson::Null).into_py(py),
-        },
-        InsertOneResult {
-            inserted_id: Bson(bson::Bson::RegularExpression(bson::Regex {
-                pattern: String::from("bata*"),
-                options: String::from("i"),
-            }))
-            .into_py(py),
-        },
-        InsertOneResult {
-            inserted_id: Bson(bson::Bson::JavaScriptCode(String::from("1 + 2"))).into_py(py),
-        },
-        InsertOneResult {
-            inserted_id: Bson(bson::Bson::Binary(bson::Binary {
-                subtype: bson::spec::BinarySubtype::Generic,
-                bytes: vec![104, 101, 108, 108, 111],
-            }))
-            .into_py(py),
-        },
-        InsertOneResult {
-            inserted_id: Bson(bson::Bson::ObjectId(bson::oid::ObjectId::new())).into_py(py),
-        },
-        InsertOneResult {
-            inserted_id: Bson(bson::Bson::DateTime(bson::DateTime::now())).into_py(py),
-        },
-        InsertOneResult {
-            inserted_id: Bson(bson::Bson::Decimal128(
-                "3.14159".parse::<bson::Decimal128>().unwrap(),
-            ))
-            .into_py(py),
-        },
-        InsertOneResult {
-            inserted_id: Bson(bson::Bson::Symbol("batata".to_owned())).into_py(py),
-        },
-        InsertOneResult {
-            inserted_id: Bson(bson::Bson::Undefined).into_py(py),
-        },
-        InsertOneResult {
-            inserted_id: Bson(bson::Bson::MaxKey).into_py(py),
-        },
-        InsertOneResult {
-            inserted_id: Bson(bson::Bson::MinKey).into_py(py),
-        },
-    ];
+pub fn find_one<'a>(
+    py: Python<'a>,
+    collection: Collection,
+    filter: Document,
+    session: Option<ClientSession>,
+) -> PyResult<&'a PyAny> {
+    pyo3_asyncio::tokio::future_into_py::<_, Document>(py, async move {
+        let result = match session {
+            Some(s) => {
+                let session = s.0.lock().;
+                interface::find_one(collection.0, filter.0, Some(*session)).await
+            }
+            None => interface::find_one(collection.0, filter.0, None).await,
+        };
+        match result {
+            Ok(c) => Ok(Document(c)),
+            Err(e) => Err(PyErr::new::<exceptions::PyValueError, _>(e.to_string())),
+        }
+    })
 }
-
-// #[pyfunction]
-// pub fn get_document() -> Document {
-//     let doc = bson::Document::new();
-//     Document(doc)
-// }
-
-// pub async fn find_one(
-//     collection: Collection,
-//     filter: DocumentWrap,
-//     session: Option<&mut ClientSession>,
-// ) -> PyResult<DocumentWrap> {
-// }
 
 // pub async fn find_many(
 //     collection: Collection,
-//     filter: Option<DocumentWrap>,
+//     filter: Option<Document>,
 //     session: Option<&mut ClientSession>,
-// ) -> PyResult<ResultIterator<DocumentWrap>> {
+// ) -> PyResult<ResultIterator> {
 // }
 
 // pub async fn insert_one(
 //     collection: Collection,
-//     document: DocumentWrap,
+//     document: Document,
 //     session: Option<&mut ClientSession>,
 // ) -> PyResult<InsertOneResult> {
 // }
 
 // pub async fn insert_many(
 //     collection: Collection,
-//     documents: impl Iterator<Item = DocumentWrap>,
+//     documents: impl Iterator<Item = Document>,
 //     session: Option<&mut ClientSession>,
 // ) -> PyResult<InsertManyResult> {
 // }
 
 // pub async fn update_one(
 //     collection: Collection,
-//     update: DocumentWrap,
-//     filter: DocumentWrap,
+//     update: Document,
+//     filter: Document,
 //     session: Option<&mut ClientSession>,
 // ) -> PyResult<UpdateResult> {
 // }
 
 // pub async fn delete_one(
 //     collection: Collection,
-//     filter: DocumentWrap,
+//     filter: Document,
 //     session: Option<&mut ClientSession>,
 // ) -> PyResult<DeleteResult> {
 // }
 
 // pub async fn delete_many(
 //     collection: Collection,
-//     filter: Option<DocumentWrap>,
+//     filter: Option<Document>,
 //     session: Option<&mut ClientSession>,
 // ) -> PyResult<DeleteResult> {
 // }
 
 // pub async fn aggregate(
 //     collection: Collection,
-//     pipeline: impl Iterator<Item = DocumentWrap>,
+//     pipeline: impl Iterator<Item = Document>,
 //     session: Option<&mut ClientSession>,
-// ) -> PyResult<ResultIterator<DocumentWrap>> {
+// ) -> PyResult<ResultIterator> {
 // }
 
 // pub async fn distinct(
 //     collection: Collection,
 //     field_name: &str,
-//     filter: Option<DocumentWrap>,
+//     filter: Option<Document>,
 //     session: Option<&mut ClientSession>,
 // ) -> PyResult<Vec<Bson>> {
 // }
@@ -170,12 +107,12 @@ pub fn get_insert_one(py: Python) -> Vec<InsertOneResult> {
 // pub async fn list_indexes(
 //     collection: Collection,
 //     session: Option<&mut ClientSession>,
-// ) -> PyResult<ResultIterator<IndexModel>> {
+// ) -> PyResult<ResultIterator> {
 // }
 
 // pub async fn create_indexes(
 //     collection: Collection,
-//     indexes: impl Iterator<Item = IndexModel>,
+//     indexes: Vec<IndexModel>,
 //     session: Option<&mut ClientSession>,
 // ) -> PyResult<CreateIndexesResult> {
 // }
@@ -186,8 +123,4 @@ pub fn get_insert_one(py: Python) -> Vec<InsertOneResult> {
 // ) -> PyResult<()> {
 // }
 
-// pub async fn count_documents(
-//     collection: Collection,
-//     filter: Option<DocumentWrap>,
-// ) -> PyResult<u64> {
-// }
+// pub async fn count_documents(collection: Collection, filter: Option<Document>) -> PyResult<u64> {}

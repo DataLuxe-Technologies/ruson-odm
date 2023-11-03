@@ -5,24 +5,16 @@ use pyo3::{exceptions, prelude::*};
 use super::collection_binding::Collection;
 
 #[pyclass]
-pub struct Database {
-    pub(crate) database: mongodb::Database,
-}
-
-impl Database {
-    pub(crate) fn new(database: mongodb::Database) -> Self {
-        Database { database }
-    }
-}
+pub struct Database(pub(crate) mongodb::Database);
 
 #[pyfunction]
 pub fn collection(db: &Database, collection_name: String) -> Collection {
-    Collection::new(db.database.collection(collection_name.as_str()))
+    Collection(db.0.collection(collection_name.as_str()))
 }
 
 #[pyfunction]
 pub fn drop<'a>(py: Python<'a>, db: &Database) -> PyResult<&'a PyAny> {
-    let db = db.database.clone();
+    let db = db.0.clone();
     pyo3_asyncio::tokio::future_into_py(py, async move {
         let result = db.drop(None).await;
         match result {
@@ -34,7 +26,7 @@ pub fn drop<'a>(py: Python<'a>, db: &Database) -> PyResult<&'a PyAny> {
 
 #[pyfunction]
 pub fn list_collections<'a>(py: Python<'a>, db: &Database) -> PyResult<&'a PyAny> {
-    let db = db.database.clone();
+    let db = db.0.clone();
     pyo3_asyncio::tokio::future_into_py(py, async move {
         let result = db.list_collection_names(None).await;
         match result {

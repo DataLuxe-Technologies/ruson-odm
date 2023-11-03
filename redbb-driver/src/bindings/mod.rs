@@ -5,6 +5,7 @@ mod client_binding;
 mod collection_binding;
 mod database_biding;
 mod document_binding;
+mod index_binding;
 mod results_binding;
 mod utils;
 
@@ -53,10 +54,6 @@ pub fn database(py: Python<'_>, m: &PyModule) -> PyResult<()> {
 pub fn collection(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     let collection_module = PyModule::new(py, "collection")?;
     collection_module.add_class::<collection_binding::Collection>()?;
-    collection_module.add_function(wrap_pyfunction!(
-        collection_binding::get_insert_one,
-        collection_module
-    )?)?;
     m.add_submodule(collection_module)?;
     Ok(())
 }
