@@ -4,7 +4,12 @@ build-backend = "maturin"
 
 [project]
 name = "redbb_driver"
-requires-python = ">=3.10"
+authors = [
+    { name = "João Severo", email = "contato@gmail.com" }
+]
+description = "Asynchronous MongoDB Driver Wrapper For Rust MongoDB crate"
+requires-python = ">=3.9"
+keywords = ["rust", "mongo", "driver", "database"]
 classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
