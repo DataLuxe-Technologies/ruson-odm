@@ -55,6 +55,14 @@ pub struct IndexOptions {
     pub hidden: Option<bool>,
 }
 
+#[pymethods]
+impl IndexOptions {
+    #[new]
+    fn new() -> Self {
+        todo!()
+    }
+}
+
 #[pyclass(frozen, get_all)]
 #[derive(Clone)]
 pub struct IndexModel {
@@ -64,4 +72,12 @@ pub struct IndexModel {
 
     /// The options for the index.
     pub options: Option<IndexOptions>,
+}
+
+#[pymethods]
+impl IndexModel {
+    #[new]
+    fn new() -> Self {
+        todo!()
+    }
 }

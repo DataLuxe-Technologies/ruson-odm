@@ -85,15 +85,15 @@ impl Document {
         }
     }
 
-    pub fn __getitem__(&self, key: &PyAny) -> Option<PyObject> {
-        self.get(key)
-    }
-
-    fn get_with_error(&self, key: &PyAny) -> PyResult<Option<PyObject>> {
+    pub fn __getitem__(&self, key: &PyAny) -> PyResult<PyObject> {
         key_is_string(key)?;
-        match self.0.get(key.extract::<String>()?) {
-            Some(b) => Ok(Python::with_gil(|py| Some(Bson(b.clone()).into_py(py)))),
-            None => Ok(None),
+        let string_key = key.extract::<String>()?;
+        match self.0.get(&string_key) {
+            Some(b) => Ok(Python::with_gil(|py| Bson(b.clone()).into_py(py))),
+            None => Err(PyErr::new::<exceptions::PyKeyError, _>(format!(
+                "Key not found: '{}'",
+                string_key
+            ))),
         }
     }
 

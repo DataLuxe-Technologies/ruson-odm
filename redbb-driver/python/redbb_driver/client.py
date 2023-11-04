@@ -18,7 +18,7 @@ class Client:
         except:
             return None
 
-    async def list_database_names(self) -> list[str]:
+    async def list_databases(self) -> list[str]:
         return await rust_client.list_database_names(self.__binding_client)
 
     async def create_session(self) -> Session:
@@ -26,6 +26,9 @@ class Client:
 
     async def shutdown(self) -> None:
         await rust_client.shutdown(self.__binding_client)
+
+    def __getitem__(self, database_name: str) -> Database:
+        return self.database(database_name)
 
 
 async def create_client(db_uri: str) -> Client:

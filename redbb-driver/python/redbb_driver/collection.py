@@ -1,16 +1,15 @@
-from typing import TYPE_CHECKING
-
 from .redbb_driver import bindings
+from .results import (
+    CreateIndexesResult,
+    DeleteResult,
+    InsertManyResult,
+    InsertOneResult,
+    UpdateResult,
+)
 from .session import Session
+from .types import Document, IndexModel
 
 rust_collection = bindings.collection
-CreateIndexesResult = bindings.types.CreateIndexesResult
-DeleteResult = bindings.types.DeleteResult
-Document = bindings.types.Document
-IndexModel = bindings.types.IndexModel
-InsertManyResult = bindings.types.InsertManyResult
-InsertOneResult = bindings.types.InsertOneResult
-UpdateResult = bindings.types.UpdateResult
 
 
 class Collection:
