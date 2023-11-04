@@ -1,4 +1,10 @@
+use std::sync::Arc;
+
+use mongodb::{bson::Document, IndexModel};
 use pyo3::prelude::*;
+use tokio::sync::Mutex;
+
+use crate::interface;
 
 #[pyclass(frozen, get_all)]
 #[derive(Clone)]
@@ -32,6 +38,10 @@ pub struct CreateIndexesResult {
     pub index_names: Vec<String>,
 }
 
-#[pyclass(frozen, get_all)]
+#[pyclass(frozen)]
 #[derive(Clone)]
-pub struct ResultIterator {}
+pub struct DocumentResultIterator(pub(crate) Arc<Mutex<interface::ResultIterator<Document>>>);
+
+#[pyclass(frozen)]
+#[derive(Clone)]
+pub struct IndexResultIterator(pub(crate) Arc<Mutex<interface::ResultIterator<IndexModel>>>);

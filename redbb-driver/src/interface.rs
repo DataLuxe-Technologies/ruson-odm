@@ -1,30 +1,34 @@
 use mongodb::{
-    bson::{Bson, Document, RawDocument},
+    bson::{Bson, Document},
     error::Error,
     error::Result,
     results::{CreateIndexesResult, DeleteResult, InsertManyResult, InsertOneResult, UpdateResult},
     Client, ClientSession, Collection, Cursor, IndexModel, SessionCursor,
 };
 use serde::Deserialize;
-use std::iter::Iterator;
+use std::{iter::Iterator, sync::Arc};
+use tokio::sync::Mutex;
 
-pub(crate) enum CursorType<'a, T> {
-    Session(SessionCursor<T>, &'a mut ClientSession),
+pub(crate) enum CursorType<T> {
+    Session(SessionCursor<T>, Arc<Mutex<ClientSession>>),
     Plain(Cursor<T>),
 }
 
-pub(crate) struct ResultIterator<'a, T> {
-    cursor: CursorType<'a, T>,
+pub(crate) struct ResultIterator<T> {
+    cursor: CursorType<T>,
 }
 
-impl<'a, T> ResultIterator<'a, T> {
-    pub(crate) fn new(cursor: CursorType<'a, T>) -> Self {
+impl<'a, T> ResultIterator<T> {
+    pub(crate) fn new(cursor: CursorType<T>) -> Self {
         ResultIterator { cursor }
     }
 
     pub(crate) async fn advance(&mut self) -> Result<bool> {
         match &mut self.cursor {
-            CursorType::Session(c, s) => c.advance(s).await,
+            CursorType::Session(c, s) => {
+                let mut session = s.lock().await;
+                c.advance(&mut session).await
+            }
             CursorType::Plain(c) => c.advance().await,
         }
     }
@@ -38,13 +42,6 @@ impl<'a, T> ResultIterator<'a, T> {
             CursorType::Plain(c) => c.deserialize_current(),
         }
     }
-
-    pub(crate) fn current(&self) -> &RawDocument {
-        match &self.cursor {
-            CursorType::Session(c, _) => c.current(),
-            CursorType::Plain(c) => c.current(),
-        }
-    }
 }
 
 pub(crate) async fn create_client(db_uri: &str) -> Result<Client> {
@@ -54,10 +51,15 @@ pub(crate) async fn create_client(db_uri: &str) -> Result<Client> {
 pub(crate) async fn find_one(
     collection: Collection<Document>,
     filter: Document,
-    session: Option<&mut ClientSession>,
+    session: Option<Arc<Mutex<ClientSession>>>,
 ) -> Result<Document> {
     let out = match session {
-        Some(s) => collection.find_one_with_session(filter, None, s).await?,
+        Some(s) => {
+            let mut session = s.lock().await;
+            collection
+                .find_one_with_session(filter, None, &mut session)
+                .await?
+        }
         None => collection.find_one(filter, None).await?,
     };
     out.ok_or(Error::custom("No document found"))
@@ -66,12 +68,16 @@ pub(crate) async fn find_one(
 pub(crate) async fn find_many(
     collection: Collection<Document>,
     filter: Option<Document>,
-    session: Option<&mut ClientSession>,
+    session: Option<Arc<Mutex<ClientSession>>>,
 ) -> Result<ResultIterator<Document>> {
     match session {
         Some(s) => {
-            let cursor = collection.find_with_session(filter, None, s).await?;
-            Ok(ResultIterator::new(CursorType::Session(cursor, s)))
+            let copy = s.clone();
+            let mut session = s.lock().await;
+            let cursor = collection
+                .find_with_session(filter, None, &mut session)
+                .await?;
+            Ok(ResultIterator::new(CursorType::Session(cursor, copy)))
         }
         None => {
             let cursor = collection.find(filter, None).await?;
@@ -83,10 +89,15 @@ pub(crate) async fn find_many(
 pub(crate) async fn insert_one(
     collection: Collection<Document>,
     document: Document,
-    session: Option<&mut ClientSession>,
+    session: Option<Arc<Mutex<ClientSession>>>,
 ) -> Result<InsertOneResult> {
     match session {
-        Some(s) => collection.insert_one_with_session(document, None, s).await,
+        Some(s) => {
+            let mut session = s.lock().await;
+            collection
+                .insert_one_with_session(document, None, &mut session)
+                .await
+        }
         None => collection.insert_one(document, None).await,
     }
 }
@@ -94,12 +105,13 @@ pub(crate) async fn insert_one(
 pub(crate) async fn insert_many(
     collection: Collection<Document>,
     documents: impl Iterator<Item = Document>,
-    session: Option<&mut ClientSession>,
+    session: Option<Arc<Mutex<ClientSession>>>,
 ) -> Result<InsertManyResult> {
     match session {
         Some(s) => {
+            let mut session = s.lock().await;
             collection
-                .insert_many_with_session(documents, None, s)
+                .insert_many_with_session(documents, None, &mut session)
                 .await
         }
         None => collection.insert_many(documents, None).await,
@@ -110,12 +122,13 @@ pub(crate) async fn update_one(
     collection: Collection<Document>,
     update: Document,
     filter: Document,
-    session: Option<&mut ClientSession>,
+    session: Option<Arc<Mutex<ClientSession>>>,
 ) -> Result<UpdateResult> {
     match session {
         Some(s) => {
+            let mut session = s.lock().await;
             collection
-                .update_one_with_session(filter, update, None, s)
+                .update_one_with_session(filter, update, None, &mut session)
                 .await
         }
         None => collection.update_one(filter, update, None).await,
@@ -125,44 +138,48 @@ pub(crate) async fn update_one(
 pub(crate) async fn delete_one(
     collection: Collection<Document>,
     filter: Document,
-    session: Option<&mut ClientSession>,
+    session: Option<Arc<Mutex<ClientSession>>>,
 ) -> Result<DeleteResult> {
     match session {
-        Some(s) => collection.delete_one_with_session(filter, None, s).await,
+        Some(s) => {
+            let mut session = s.lock().await;
+            collection
+                .delete_one_with_session(filter, None, &mut session)
+                .await
+        }
         None => collection.delete_one(filter, None).await,
     }
 }
 
 pub(crate) async fn delete_many(
     collection: Collection<Document>,
-    filter: Option<Document>,
-    session: Option<&mut ClientSession>,
+    filter: Document,
+    session: Option<Arc<Mutex<ClientSession>>>,
 ) -> Result<DeleteResult> {
-    match filter {
-        Some(f) => match session {
-            Some(s) => collection.delete_many_with_session(f, None, s).await,
-            None => collection.delete_many(f, None).await,
-        },
-        None => match session {
-            Some(s) => {
-                collection
-                    .delete_many_with_session(Document::new(), None, s)
-                    .await
-            }
-            None => collection.delete_many(Document::new(), None).await,
-        },
+    match session {
+        Some(s) => {
+            let mut session = s.lock().await;
+            collection
+                .delete_many_with_session(filter, None, &mut session)
+                .await
+        }
+        None => collection.delete_many(filter, None).await,
     }
 }
 
 pub(crate) async fn aggregate(
     collection: Collection<Document>,
     pipeline: impl Iterator<Item = Document>,
-    session: Option<&mut ClientSession>,
+    session: Option<Arc<Mutex<ClientSession>>>,
 ) -> Result<ResultIterator<Document>> {
     match session {
         Some(s) => {
-            let cursor = collection.aggregate_with_session(pipeline, None, s).await?;
-            Ok(ResultIterator::new(CursorType::Session(cursor, s)))
+            let copy = s.clone();
+            let mut session = s.lock().await;
+            let cursor = collection
+                .aggregate_with_session(pipeline, None, &mut session)
+                .await?;
+            Ok(ResultIterator::new(CursorType::Session(cursor, copy)))
         }
         None => {
             let cursor = collection.aggregate(pipeline, None).await?;
@@ -175,12 +192,13 @@ pub(crate) async fn distinct(
     collection: Collection<Document>,
     field_name: &str,
     filter: Option<Document>,
-    session: Option<&mut ClientSession>,
+    session: Option<Arc<Mutex<ClientSession>>>,
 ) -> Result<Vec<Bson>> {
     match session {
         Some(s) => {
+            let mut session = s.lock().await;
             collection
-                .distinct_with_session(field_name, filter, None, s)
+                .distinct_with_session(field_name, filter, None, &mut session)
                 .await
         }
         None => collection.distinct(field_name, filter, None).await,
@@ -189,33 +207,16 @@ pub(crate) async fn distinct(
 
 pub(crate) async fn list_indexes(
     collection: Collection<Document>,
-    session: Option<&mut ClientSession>,
 ) -> Result<ResultIterator<IndexModel>> {
-    match session {
-        Some(s) => {
-            let cursor = collection.list_indexes_with_session(None, s).await?;
-            Ok(ResultIterator::new(CursorType::Session(cursor, s)))
-        }
-        None => {
-            let cursor = collection.list_indexes(None).await?;
-            Ok(ResultIterator::new(CursorType::Plain(cursor)))
-        }
-    }
+    let cursor = collection.list_indexes(None).await?;
+    Ok(ResultIterator::new(CursorType::Plain(cursor)))
 }
 
 pub(crate) async fn create_indexes(
     collection: Collection<Document>,
     indexes: impl Iterator<Item = IndexModel>,
-    session: Option<&mut ClientSession>,
 ) -> Result<CreateIndexesResult> {
-    match session {
-        Some(s) => {
-            collection
-                .create_indexes_with_session(indexes, None, s)
-                .await
-        }
-        None => collection.create_indexes(indexes, None).await,
-    }
+    collection.create_indexes(indexes, None).await
 }
 
 pub(crate) async fn drop_indexes(

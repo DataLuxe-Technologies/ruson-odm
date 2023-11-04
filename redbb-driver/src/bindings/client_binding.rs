@@ -1,8 +1,8 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use mongodb;
-
 use pyo3::{exceptions, prelude::*};
+use tokio::sync::Mutex;
 
 use super::database_biding::Database;
 use crate::interface;

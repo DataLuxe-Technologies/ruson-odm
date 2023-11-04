@@ -10,7 +10,7 @@ pub struct IndexOptions {
 
     /// If true, the index only references documents with the specified field. The
     /// default value is false.
-    pub sparce: Option<Document>,
+    pub sparse: Option<bool>,
 
     /// Forces the index to be unique so the collection will not accept documents where the index
     /// key value matches an existing value in the index. The default value is false.

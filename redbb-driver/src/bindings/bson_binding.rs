@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, num::ParseIntError};
 
 use mongodb::{self, bson};
 
@@ -163,15 +163,34 @@ pub struct Binary {
 #[pymethods]
 impl Binary {
     fn __repr__(&self) -> String {
+        let byte_string = self
+            .bytes
+            .iter()
+            .map(|b| format!("{:02x?}", b))
+            .reduce(|acc, v| acc + &v)
+            .unwrap();
+
         format!(
-            "redbb_driver.types.Binary(subtype={}, bytes={:02X?})",
-            self.subtype, self.bytes
+            "redbb_driver.types.Binary(subtype={}, bytes=\"{}\")",
+            self.subtype, byte_string
         )
     }
 
     #[getter]
     fn get_bytes(&self) -> PyObject {
         Python::with_gil(|py| PyBytes::new(py, &self.bytes.as_slice()).into_py(py))
+    }
+
+    #[getter]
+    fn get_value(&self) -> PyObject {
+        let byte_string = self
+            .bytes
+            .iter()
+            .map(|b| format!("{:02x?}", b))
+            .reduce(|acc, v| acc + &v)
+            .unwrap();
+
+        Python::with_gil(|py| byte_string.into_py(py))
     }
 }
 
@@ -183,13 +202,50 @@ pub struct ObjectId {
 
 #[pymethods]
 impl ObjectId {
+    #[new]
+    fn new(value: String) -> Self {
+        if value.len() != 24 {
+            panic!("Value is not a valid ObjectId");
+        }
+
+        let s = value.as_str();
+        let id_vec: Result<Vec<u8>, ParseIntError> = (0..s.len())
+            .step_by(2)
+            .map(|i| u8::from_str_radix(&s[i..i + 2], 16))
+            .collect();
+
+        if id_vec.is_err() {
+            panic!("Value is not a valid ObjectId, invalid bytes found");
+        }
+
+        let mut id: [u8; 12] = [0; 12];
+        id.copy_from_slice(id_vec.unwrap().as_slice());
+        Self { id }
+    }
+
     fn __repr__(&self) -> String {
-        format!("redbb_driver.types.ObjectId({:02X?})", self.id.to_vec())
+        let byte_string = self
+            .id
+            .to_vec()
+            .iter()
+            .map(|b| format!("{:02x?}", b))
+            .reduce(|acc, v| acc + &v)
+            .unwrap();
+
+        format!("redbb_driver.types.ObjectId(\"{}\")", byte_string)
     }
 
     #[getter]
     fn get_value(&self) -> PyObject {
-        Python::with_gil(|py| self.id.to_vec().into_py(py))
+        let byte_string = self
+            .id
+            .to_vec()
+            .iter()
+            .map(|b| format!("{:02x?}", b))
+            .reduce(|acc, v| acc + &v)
+            .unwrap();
+
+        Python::with_gil(|py| byte_string.into_py(py))
     }
 }
 
@@ -202,12 +258,33 @@ pub struct Decimal128 {
 #[pymethods]
 impl Decimal128 {
     fn __repr__(&self) -> String {
-        format!("redbb_driver.types.Decimal128({:04X?})", self.bytes)
+        let byte_string = self
+            .bytes
+            .to_vec()
+            .iter()
+            .map(|b| format!("{:02x?}", b))
+            .reduce(|acc, v| acc + &v)
+            .unwrap();
+
+        format!("redbb_driver.types.Decimal128(\"{}\")", byte_string)
     }
 
     #[getter]
     fn get_bytes(&self) -> PyObject {
         Python::with_gil(|py| PyBytes::new(py, &self.bytes.as_slice()).into_py(py))
+    }
+
+    #[getter]
+    fn get_value(&self) -> PyObject {
+        let byte_string = self
+            .bytes
+            .to_vec()
+            .iter()
+            .map(|b| format!("{:02x?}", b))
+            .reduce(|acc, v| acc + &v)
+            .unwrap();
+
+        Python::with_gil(|py| byte_string.into_py(py))
     }
 }
 

@@ -5,9 +5,12 @@ mod interface;
 
 #[pymodule]
 fn redbb_driver(py: Python<'_>, m: &PyModule) -> PyResult<()> {
-    bindings::client(py, m)?;
-    bindings::database(py, m)?;
-    bindings::collection(py, m)?;
-    bindings::types(py, m)?;
+    let rust_module = PyModule::new(py, "bindings")?;
+    bindings::client(py, rust_module)?;
+    bindings::database(py, rust_module)?;
+    bindings::collection(py, rust_module)?;
+    bindings::iterator(py, rust_module)?;
+    bindings::types(py, rust_module)?;
+    m.add_submodule(rust_module)?;
     Ok(())
 }
