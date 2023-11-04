@@ -15,3 +15,4 @@ Undefined = bindings.types.Undefined
 IndexModel = bindings.types.IndexModel
 IndexOptions = bindings.types.IndexOptions
 Document = bindings.types.Document
+DocumentIter = bindings.types.DocumentIter

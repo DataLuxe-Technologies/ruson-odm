@@ -1,6 +1,8 @@
 from .results import (
     CreateIndexesResult,
     DeleteResult,
+    FindDocumentsIterator,
+    FindIndexesIterator,
     InsertManyResult,
     InsertOneResult,
     UpdateResult,
@@ -18,7 +20,7 @@ class Collection:
         self,
         filter: Document | None = None,
         session: Session | None = None,
-    ) -> None: ...
+    ) -> FindDocumentsIterator: ...
     async def insert_one(
         self,
         document: Document,
@@ -49,14 +51,14 @@ class Collection:
         self,
         pipeline: list[Document],
         session: Session | None = None,
-    ) -> None: ...
+    ) -> FindDocumentsIterator: ...
     async def distinct(
         self,
         field_name: str,
         filter: Document | None = None,
         session: Session | None = None,
     ) -> list[str]: ...
-    async def list_indexes(self) -> None: ...
+    async def list_indexes(self) -> FindIndexesIterator: ...
     async def create_indexes(
         self, indexes: list[IndexModel]
     ) -> CreateIndexesResult: ...

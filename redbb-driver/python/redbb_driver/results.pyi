@@ -1,4 +1,6 @@
-from typing import Any, Callable, Iterable, Self
+from typing import Any, AsyncIterator
+
+from .types import Document, IndexModel
 
 class InsertOneResult:
     @property
@@ -23,3 +25,11 @@ class DeleteResult:
 class CreateIndexesResult:
     @property
     def index_names(self) -> list[str]: ...
+
+class FindDocumentsIterator:
+    def __aiter__(self) -> AsyncIterator[Document]: ...
+    async def __anext__(self) -> Document | None: ...
+
+class FindIndexesIterator:
+    def __aiter__(self) -> AsyncIterator[IndexModel]: ...
+    async def __anext__(self) -> IndexModel | None: ...

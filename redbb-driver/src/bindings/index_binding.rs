@@ -2,7 +2,7 @@ use pyo3::prelude::*;
 
 use super::document_binding::Document;
 
-#[pyclass(frozen, get_all)]
+#[pyclass(frozen, get_all, module = "redbb_driver.types")]
 #[derive(Clone)]
 pub struct IndexOptions {
     /// Specifies a name outside the default generated name.
@@ -58,12 +58,44 @@ pub struct IndexOptions {
 #[pymethods]
 impl IndexOptions {
     #[new]
-    fn new() -> Self {
-        todo!()
+    fn new(
+        name: Option<String>,
+        sparse: Option<bool>,
+        unique: Option<bool>,
+        default_language: Option<String>,
+        language_override: Option<String>,
+        weigths: Option<Document>,
+        bits: Option<u32>,
+        max: Option<f64>,
+        min: Option<f64>,
+        bucket_size: Option<u32>,
+        partial_filter_expression: Option<Document>,
+        wildcard_projection: Option<Document>,
+        hidden: Option<bool>,
+    ) -> Self {
+        Self {
+            name,
+            sparse,
+            unique,
+            default_language,
+            language_override,
+            weigths,
+            bits,
+            max,
+            min,
+            bucket_size,
+            partial_filter_expression,
+            wildcard_projection,
+            hidden,
+        }
+    }
+
+    fn __repr__(&self) -> String {
+        format!("redbb_driver.types.IndexOptions(...)")
     }
 }
 
-#[pyclass(frozen, get_all)]
+#[pyclass(frozen, get_all, module = "redbb_driver.types")]
 #[derive(Clone)]
 pub struct IndexModel {
     /// Specifies the index’s fields. For each field, specify a key-value pair in which the key is
@@ -77,7 +109,11 @@ pub struct IndexModel {
 #[pymethods]
 impl IndexModel {
     #[new]
-    fn new() -> Self {
-        todo!()
+    fn new(keys: PyObject, options: Option<IndexOptions>) -> Self {
+        Self { keys, options }
+    }
+
+    fn __repr__(&self) -> String {
+        format!("redbb_driver.types.IndexModel(...)")
     }
 }

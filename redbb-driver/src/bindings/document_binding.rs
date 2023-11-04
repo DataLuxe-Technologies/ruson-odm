@@ -4,11 +4,11 @@ use pyo3::{self, exceptions, prelude::*, types::PyString};
 
 use super::bson_binding::Bson;
 
-#[pyclass(sequence)]
+#[pyclass(sequence, module = "redbb_driver.types")]
 #[derive(Clone)]
 pub struct Document(pub(crate) bson::Document);
 
-#[pyclass]
+#[pyclass(module = "redbb_driver.types")]
 #[derive(Clone)]
 pub struct DocumentIter {
     idx: usize,
@@ -25,6 +25,10 @@ impl DocumentIter {
             self.idx += 1;
             self.document_items.pop()
         }
+    }
+
+    pub fn __repr__(&self) -> String {
+        format!("redbb_driver.types.DocumentIter(...)")
     }
 }
 

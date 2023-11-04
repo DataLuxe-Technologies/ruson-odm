@@ -2,6 +2,8 @@ from .redbb_driver import bindings
 from .results import (
     CreateIndexesResult,
     DeleteResult,
+    FindDocumentsIterator,
+    FindIndexesIterator,
     InsertManyResult,
     InsertOneResult,
     UpdateResult,
@@ -28,9 +30,11 @@ class Collection:
         self,
         filter: Document | None = None,
         session: Session | None = None,
-    ) -> None:  # TODO fix iterator return type
+    ) -> FindDocumentsIterator:
         s = None if session is None else session._get_session()
-        return await rust_collection.find_many(self.__binding_collection, filter, s)
+        return FindDocumentsIterator(
+            await rust_collection.find_many(self.__binding_collection, filter, s)
+        )
 
     async def insert_one(
         self,
@@ -81,9 +85,11 @@ class Collection:
         self,
         pipeline: list[Document],
         session: Session | None = None,
-    ) -> None:  # TODO fix iterator return type
+    ) -> FindDocumentsIterator:
         s = None if session is None else session._get_session()
-        return await rust_collection.aggregate(self.__binding_collection, pipeline, s)
+        return FindDocumentsIterator(
+            await rust_collection.aggregate(self.__binding_collection, pipeline, s)
+        )
 
     async def distinct(
         self,
@@ -96,8 +102,10 @@ class Collection:
             self.__binding_collection, field_name, filter, s
         )
 
-    async def list_indexes(self) -> None:  # TODO fix iterator return type
-        return await rust_collection.list_indexes(self.__binding_collection)
+    async def list_indexes(self) -> FindIndexesIterator:
+        return FindIndexesIterator(
+            await rust_collection.list_indexes(self.__binding_collection)
+        )
 
     async def create_indexes(self, indexes: list[IndexModel]) -> CreateIndexesResult:
         return await rust_collection.create_indexes(self.__binding_collection, indexes)

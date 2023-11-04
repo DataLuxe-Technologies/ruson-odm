@@ -18,6 +18,10 @@ pub struct Undefined;
 
 #[pymethods]
 impl Undefined {
+    fn __repr__(&self) -> String {
+        "redbb_driver.types.Undefined".to_owned()
+    }
+
     fn __str__(&self) -> String {
         "Undefined".to_owned()
     }
@@ -29,6 +33,10 @@ pub struct MaxKey;
 
 #[pymethods]
 impl MaxKey {
+    fn __repr__(&self) -> String {
+        "redbb_driver.types.MaxKey".to_owned()
+    }
+
     fn __str__(&self) -> String {
         "MaxKey".to_owned()
     }
@@ -40,6 +48,10 @@ pub struct MinKey;
 
 #[pymethods]
 impl MinKey {
+    fn __repr__(&self) -> String {
+        "redbb_driver.types.MinKey".to_owned()
+    }
+
     fn __str__(&self) -> String {
         "MinKey".to_owned()
     }
@@ -53,6 +65,10 @@ pub struct Symbol {
 
 #[pymethods]
 impl Symbol {
+    fn __repr__(&self) -> String {
+        format!("redbb_driver.types.Symbol(symbol=\"{}\")", self.symbol)
+    }
+
     fn __str__(&self) -> String {
         self.symbol.clone()
     }
@@ -66,6 +82,10 @@ pub struct JavaScriptCode {
 
 #[pymethods]
 impl JavaScriptCode {
+    fn __repr__(&self) -> String {
+        format!("redbb_driver.types.JavaScriptCode(code=\"{}\")", self.code)
+    }
+
     fn __str__(&self) -> String {
         self.code.clone()
     }
@@ -78,12 +98,37 @@ pub struct JavaScriptCodeWithScope {
     scope: PyObject,
 }
 
+#[pymethods]
+impl JavaScriptCodeWithScope {
+    fn __repr__(&self) -> String {
+        format!(
+            "redbb_driver.types.JavaScriptCodeWithScope(code=\"{}\", scope={})",
+            self.code, self.scope
+        )
+    }
+
+    fn __str__(&self) -> String {
+        self.code.to_string()
+    }
+}
+
 #[pyclass(frozen, module = "redbb_driver.types")]
 #[derive(Clone)]
 pub struct Timestamp {
     #[pyo3(get)]
     timestamp: u32,
     pub(crate) increment: u32,
+}
+
+#[pymethods]
+impl Timestamp {
+    fn __repr__(&self) -> String {
+        format!("redbb_driver.types.Timestamp(timestamp={})", self.timestamp)
+    }
+
+    fn __str__(&self) -> String {
+        self.timestamp.to_string()
+    }
 }
 
 #[pyclass(get_all, set_all, module = "redbb_driver.types")]
@@ -97,7 +142,7 @@ pub struct Regex {
 impl Regex {
     fn __repr__(&self) -> String {
         format!(
-            "redbb_driver.types.Regex(regex={}, options={})",
+            "redbb_driver.types.Regex(regex=\"{}\", options=\"{}\")",
             self.pattern, self.options
         )
     }
@@ -107,7 +152,7 @@ impl Regex {
     }
 }
 
-#[pyclass(frozen)]
+#[pyclass(frozen, module = "redbb_driver.types")]
 #[derive(Clone)]
 pub struct BinarySubtype {
     pub(crate) id: u8,
@@ -119,6 +164,10 @@ impl BinarySubtype {
     #[getter]
     fn get_value(&self) -> String {
         format!("{}", self)
+    }
+
+    fn __repr__(&self) -> String {
+        format!("redbb_driver.types.BinarySubtype.{}", self)
     }
 
     fn __str__(&self) -> String {
@@ -174,6 +223,15 @@ impl Binary {
             "redbb_driver.types.Binary(subtype={}, bytes=\"{}\")",
             self.subtype, byte_string
         )
+    }
+
+    fn __str__(&self) -> String {
+        self.bytes
+            .to_vec()
+            .iter()
+            .map(|b| format!("{:02x?}", b))
+            .reduce(|acc, v| acc + &v)
+            .unwrap()
     }
 
     #[getter]
@@ -235,6 +293,15 @@ impl ObjectId {
         format!("redbb_driver.types.ObjectId(\"{}\")", byte_string)
     }
 
+    fn __str__(&self) -> String {
+        self.id
+            .to_vec()
+            .iter()
+            .map(|b| format!("{:02x?}", b))
+            .reduce(|acc, v| acc + &v)
+            .unwrap()
+    }
+
     #[getter]
     fn get_value(&self) -> PyObject {
         let byte_string = self
@@ -267,6 +334,15 @@ impl Decimal128 {
             .unwrap();
 
         format!("redbb_driver.types.Decimal128(\"{}\")", byte_string)
+    }
+
+    fn __str__(&self) -> String {
+        self.bytes
+            .to_vec()
+            .iter()
+            .map(|b| format!("{:02x?}", b))
+            .reduce(|acc, v| acc + &v)
+            .unwrap()
     }
 
     #[getter]
