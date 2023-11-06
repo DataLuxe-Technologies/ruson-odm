@@ -6,7 +6,7 @@ use mongodb::{
     Client, ClientSession, Collection, Cursor, IndexModel, SessionCursor,
 };
 use serde::Deserialize;
-use std::{iter::Iterator, sync::Arc};
+use std::{iter::Iterator, sync::Arc, time::Duration};
 use tokio::sync::Mutex;
 
 pub(crate) enum CursorType<T> {
@@ -53,14 +53,17 @@ pub(crate) async fn find_one(
     filter: Document,
     session: Option<Arc<Mutex<ClientSession>>>,
 ) -> Result<Document> {
+    let timeout_options = mongodb::options::FindOneOptions::builder()
+        .max_time(Duration::from_secs(5))
+        .build();
     let out = match session {
         Some(s) => {
             let mut session = s.lock().await;
             collection
-                .find_one_with_session(filter, None, &mut session)
+                .find_one_with_session(filter, timeout_options, &mut session)
                 .await?
         }
-        None => collection.find_one(filter, None).await?,
+        None => collection.find_one(filter, timeout_options).await?,
     };
     out.ok_or(Error::custom("No document found"))
 }
@@ -70,17 +73,23 @@ pub(crate) async fn find_many(
     filter: Option<Document>,
     session: Option<Arc<Mutex<ClientSession>>>,
 ) -> Result<ResultIterator<Document>> {
+    let timeout_options = mongodb::options::FindOptions::builder()
+        .max_time(Duration::from_secs(5))
+        .max_await_time(Duration::from_secs(5))
+        .no_cursor_timeout(false)
+        .cursor_type(mongodb::options::CursorType::NonTailable)
+        .build();
     match session {
         Some(s) => {
             let copy = s.clone();
             let mut session = s.lock().await;
             let cursor = collection
-                .find_with_session(filter, None, &mut session)
+                .find_with_session(filter, timeout_options, &mut session)
                 .await?;
             Ok(ResultIterator::new(CursorType::Session(cursor, copy)))
         }
         None => {
-            let cursor = collection.find(filter, None).await?;
+            let cursor = collection.find(filter, timeout_options).await?;
             Ok(ResultIterator::new(CursorType::Plain(cursor)))
         }
     }
@@ -172,17 +181,21 @@ pub(crate) async fn aggregate(
     pipeline: impl Iterator<Item = Document>,
     session: Option<Arc<Mutex<ClientSession>>>,
 ) -> Result<ResultIterator<Document>> {
+    let timeout_options = mongodb::options::AggregateOptions::builder()
+        .max_time(Duration::from_secs(5))
+        .max_await_time(Duration::from_secs(5))
+        .build();
     match session {
         Some(s) => {
             let copy = s.clone();
             let mut session = s.lock().await;
             let cursor = collection
-                .aggregate_with_session(pipeline, None, &mut session)
+                .aggregate_with_session(pipeline, timeout_options, &mut session)
                 .await?;
             Ok(ResultIterator::new(CursorType::Session(cursor, copy)))
         }
         None => {
-            let cursor = collection.aggregate(pipeline, None).await?;
+            let cursor = collection.aggregate(pipeline, timeout_options).await?;
             Ok(ResultIterator::new(CursorType::Plain(cursor)))
         }
     }
@@ -194,21 +207,31 @@ pub(crate) async fn distinct(
     filter: Option<Document>,
     session: Option<Arc<Mutex<ClientSession>>>,
 ) -> Result<Vec<Bson>> {
+    let timeout_options = mongodb::options::DistinctOptions::builder()
+        .max_time(Duration::from_secs(5))
+        .build();
     match session {
         Some(s) => {
             let mut session = s.lock().await;
             collection
-                .distinct_with_session(field_name, filter, None, &mut session)
+                .distinct_with_session(field_name, filter, timeout_options, &mut session)
                 .await
         }
-        None => collection.distinct(field_name, filter, None).await,
+        None => {
+            collection
+                .distinct(field_name, filter, timeout_options)
+                .await
+        }
     }
 }
 
 pub(crate) async fn list_indexes(
     collection: Collection<Document>,
 ) -> Result<ResultIterator<IndexModel>> {
-    let cursor = collection.list_indexes(None).await?;
+    let timeout_options = mongodb::options::ListIndexesOptions::builder()
+        .max_time(Duration::from_secs(5))
+        .build();
+    let cursor = collection.list_indexes(timeout_options).await?;
     Ok(ResultIterator::new(CursorType::Plain(cursor)))
 }
 
@@ -216,24 +239,37 @@ pub(crate) async fn create_indexes(
     collection: Collection<Document>,
     indexes: impl Iterator<Item = IndexModel>,
 ) -> Result<CreateIndexesResult> {
-    collection.create_indexes(indexes, None).await
+    let timeout_options = mongodb::options::CreateIndexOptions::builder()
+        .max_time(Duration::from_secs(5))
+        .build();
+    collection.create_indexes(indexes, timeout_options).await
 }
 
 pub(crate) async fn drop_indexes(
     collection: Collection<Document>,
     indexes: Option<impl Iterator<Item = String>>,
 ) -> Result<()> {
+    let timeout_options = mongodb::options::DropIndexOptions::builder()
+        .max_time(Duration::from_secs(5))
+        .build();
     match indexes {
         Some(idxs) => {
-            let mut session = collection.client().start_session(None).await?;
+            let session_options = mongodb::options::SessionOptions::builder()
+                .default_transaction_options(
+                    mongodb::options::TransactionOptions::builder()
+                        .max_commit_time(Duration::from_secs(5))
+                        .build(),
+                )
+                .build();
+            let mut session = collection.client().start_session(session_options).await?;
             for index in idxs {
                 collection
-                    .drop_index_with_session(index, None, &mut session)
+                    .drop_index_with_session(index, timeout_options.clone(), &mut session)
                     .await?;
             }
             session.commit_transaction().await
         }
-        None => collection.drop_indexes(None).await,
+        None => collection.drop_indexes(timeout_options).await,
     }
 }
 
@@ -241,7 +277,10 @@ pub(crate) async fn count_documents(
     collection: Collection<Document>,
     filter: Option<Document>,
 ) -> Result<u64> {
-    collection.count_documents(filter, None).await
+    let timeout_options = mongodb::options::CountOptions::builder()
+        .max_time(Duration::from_secs(5))
+        .build();
+    collection.count_documents(filter, timeout_options).await
 }
 
 pub(crate) async fn drop(collection: Collection<Document>) -> Result<()> {

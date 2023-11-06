@@ -1,4 +1,4 @@
-from .ruson import bindings
+from ..ruson import bindings
 
 MaxKey = bindings.types.MaxKey
 MinKey = bindings.types.MinKey

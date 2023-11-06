@@ -1,6 +1,6 @@
 use mongodb::{self, bson};
 
-use pyo3::{self, exceptions, prelude::*, types::PyString};
+use pyo3::{self, exceptions, iter::IterNextOutput, prelude::*, types::PyString};
 
 use super::bson_binding::Bson;
 
@@ -12,24 +12,39 @@ pub struct Document(pub(crate) bson::Document);
 #[pyclass(module = "ruson.types")]
 #[derive(Clone)]
 pub struct DocumentIter {
-    idx: usize,
-    size: usize,
-    document_items: Vec<(String, PyObject)>,
+    index: usize,
+    len: usize,
+    document_items: Vec<(String, Py<PyAny>)>,
 }
 
 #[pymethods]
 impl DocumentIter {
-    pub fn __next__(&mut self) -> Option<(String, PyObject)> {
-        if self.idx == self.size {
-            None
+    pub fn __len__(&self) -> usize {
+        self.len
+    }
+
+    pub fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
+        slf
+    }
+
+    pub fn __next__(&mut self) -> IterNextOutput<(String, PyObject), &'static str> {
+        if self.index == self.len {
+            IterNextOutput::Return("ACABOU")
         } else {
-            self.idx += 1;
-            self.document_items.pop()
+            self.index += 1;
+            if let Some(v) = self.document_items.pop() {
+                IterNextOutput::Yield(v)
+            } else {
+                IterNextOutput::Return("SE ACABÓ")
+            }
         }
     }
 
     pub fn __repr__(&self) -> String {
-        format!("ruson.types.DocumentIter(...)")
+        format!(
+            "ruson.types.DocumentIter(index={}, len={})",
+            self.index, self.len
+        )
     }
 }
 
@@ -144,26 +159,22 @@ impl Document {
         Python::with_gil(|py| values_vector.into_py(py))
     }
 
-    pub fn items(&self) -> PyObject {
-        let items_vector = self
-            .0
-            .iter()
-            .map(|(k, v)| (k.clone(), Bson(v.clone())))
-            .collect::<Vec<(String, Bson)>>();
-
-        Python::with_gil(|py| items_vector.into_py(py))
+    pub fn items(&self) -> DocumentIter {
+        self.__iter__()
     }
 
     pub fn __iter__(&self) -> DocumentIter {
         let items_vector = self
             .0
             .iter()
-            .map(|(k, v)| Python::with_gil(|py| (k.clone(), Bson(v.clone()).into_py(py))))
+            .map(|tuple: (&String, &bson::Bson)| {
+                Python::with_gil(|py| (tuple.0.clone(), Bson(tuple.1.clone()).into_py(py)))
+            })
             .collect::<Vec<(String, PyObject)>>();
 
         DocumentIter {
-            idx: 0,
-            size: items_vector.len(),
+            index: 0,
+            len: items_vector.len(),
             document_items: items_vector,
         }
     }

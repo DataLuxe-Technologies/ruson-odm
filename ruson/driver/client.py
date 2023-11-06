@@ -1,5 +1,5 @@
+from ..ruson import bindings
 from .database import Database
-from .ruson import bindings
 from .session import Session
 
 rust_client = bindings.client

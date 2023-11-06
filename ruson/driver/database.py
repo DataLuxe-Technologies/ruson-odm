@@ -1,5 +1,5 @@
+from ..ruson import bindings
 from .collection import Collection
-from .ruson import bindings
 
 rust_database = bindings.database
 

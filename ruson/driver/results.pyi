@@ -1,14 +1,14 @@
-from typing import Any, AsyncIterator
+from typing import AsyncIterator
 
-from .types import Document, IndexModel
+from .types import AllowedTypes, Document, IndexModel
 
 class InsertOneResult:
     @property
-    def inserted_id(self) -> Any: ...
+    def inserted_id(self) -> AllowedTypes: ...
 
 class InsertManyResult:
     @property
-    def inserted_ids(self) -> list[Any]: ...
+    def inserted_ids(self) -> list[AllowedTypes]: ...
 
 class UpdateResult:
     @property
@@ -16,7 +16,7 @@ class UpdateResult:
     @property
     def modified_count(self) -> int: ...
     @property
-    def upserted_id(self) -> Any | None: ...
+    def upserted_id(self) -> AllowedTypes | None: ...
 
 class DeleteResult:
     @property

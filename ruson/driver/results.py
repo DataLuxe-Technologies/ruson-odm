@@ -1,4 +1,4 @@
-from .ruson import bindings
+from ..ruson import bindings
 
 InsertOneResult = bindings.types.InsertOneResult
 InsertManyResult = bindings.types.InsertManyResult
@@ -16,9 +16,11 @@ class FindDocumentsIterator:
 
     async def __anext__(self):
         try:
-            if not await bindings.iterator.document_advance(self.__binding_iterator):
-                raise StopAsyncIteration
+            result = await bindings.iterator.document_advance(self.__binding_iterator)
         except:
+            raise StopAsyncIteration
+
+        if not result:
             raise StopAsyncIteration
 
         result = await bindings.iterator.document_current(self.__binding_iterator)
@@ -36,9 +38,14 @@ class FindIndexesIterator:
 
     async def __anext__(self):
         try:
-            if not await bindings.iterator.index_advance(self.__binding_iterator):
-                return None
+            result = await bindings.iterator.index_advance(self.__binding_iterator)
         except:
-            return None
+            raise StopAsyncIteration
 
-        return await bindings.iterator.index_current(self.__binding_iterator)
+        if not result:
+            raise StopAsyncIteration
+
+        result = await bindings.iterator.index_current(self.__binding_iterator)
+        if not result:
+            raise StopAsyncIteration
+        return result
