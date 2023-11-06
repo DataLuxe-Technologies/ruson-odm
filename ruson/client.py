@@ -1,5 +1,5 @@
 from .database import Database
-from .redbb_driver import bindings
+from .ruson import bindings
 from .session import Session
 
 rust_client = bindings.client

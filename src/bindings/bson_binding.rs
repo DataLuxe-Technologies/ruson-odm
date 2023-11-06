@@ -12,14 +12,14 @@ use super::document_binding::Document;
 
 const BINARY_SUBTYPE_USER_DEFINED: u8 = 0x80;
 
-#[pyclass(frozen, module = "redbb_driver.types")]
+#[pyclass(frozen, module = "ruson.types")]
 #[derive(Clone)]
 pub struct Undefined;
 
 #[pymethods]
 impl Undefined {
     fn __repr__(&self) -> String {
-        "redbb_driver.types.Undefined".to_owned()
+        "ruson.types.Undefined".to_owned()
     }
 
     fn __str__(&self) -> String {
@@ -27,14 +27,14 @@ impl Undefined {
     }
 }
 
-#[pyclass(frozen, module = "redbb_driver.types")]
+#[pyclass(frozen, module = "ruson.types")]
 #[derive(Clone)]
 pub struct MaxKey;
 
 #[pymethods]
 impl MaxKey {
     fn __repr__(&self) -> String {
-        "redbb_driver.types.MaxKey".to_owned()
+        "ruson.types.MaxKey".to_owned()
     }
 
     fn __str__(&self) -> String {
@@ -42,14 +42,14 @@ impl MaxKey {
     }
 }
 
-#[pyclass(frozen, module = "redbb_driver.types")]
+#[pyclass(frozen, module = "ruson.types")]
 #[derive(Clone)]
 pub struct MinKey;
 
 #[pymethods]
 impl MinKey {
     fn __repr__(&self) -> String {
-        "redbb_driver.types.MinKey".to_owned()
+        "ruson.types.MinKey".to_owned()
     }
 
     fn __str__(&self) -> String {
@@ -57,7 +57,7 @@ impl MinKey {
     }
 }
 
-#[pyclass(get_all, set_all, module = "redbb_driver.types")]
+#[pyclass(get_all, set_all, module = "ruson.types")]
 #[derive(Clone)]
 pub struct Symbol {
     symbol: String,
@@ -66,7 +66,7 @@ pub struct Symbol {
 #[pymethods]
 impl Symbol {
     fn __repr__(&self) -> String {
-        format!("redbb_driver.types.Symbol(symbol=\"{}\")", self.symbol)
+        format!("ruson.types.Symbol(symbol=\"{}\")", self.symbol)
     }
 
     fn __str__(&self) -> String {
@@ -74,7 +74,7 @@ impl Symbol {
     }
 }
 
-#[pyclass(get_all, set_all, module = "redbb_driver.types")]
+#[pyclass(get_all, set_all, module = "ruson.types")]
 #[derive(Clone)]
 pub struct JavaScriptCode {
     code: String,
@@ -83,7 +83,7 @@ pub struct JavaScriptCode {
 #[pymethods]
 impl JavaScriptCode {
     fn __repr__(&self) -> String {
-        format!("redbb_driver.types.JavaScriptCode(code=\"{}\")", self.code)
+        format!("ruson.types.JavaScriptCode(code=\"{}\")", self.code)
     }
 
     fn __str__(&self) -> String {
@@ -102,7 +102,7 @@ pub struct JavaScriptCodeWithScope {
 impl JavaScriptCodeWithScope {
     fn __repr__(&self) -> String {
         format!(
-            "redbb_driver.types.JavaScriptCodeWithScope(code=\"{}\", scope={})",
+            "ruson.types.JavaScriptCodeWithScope(code=\"{}\", scope={})",
             self.code, self.scope
         )
     }
@@ -112,7 +112,7 @@ impl JavaScriptCodeWithScope {
     }
 }
 
-#[pyclass(frozen, module = "redbb_driver.types")]
+#[pyclass(frozen, module = "ruson.types")]
 #[derive(Clone)]
 pub struct Timestamp {
     #[pyo3(get)]
@@ -123,7 +123,7 @@ pub struct Timestamp {
 #[pymethods]
 impl Timestamp {
     fn __repr__(&self) -> String {
-        format!("redbb_driver.types.Timestamp(timestamp={})", self.timestamp)
+        format!("ruson.types.Timestamp(timestamp={})", self.timestamp)
     }
 
     fn __str__(&self) -> String {
@@ -131,7 +131,7 @@ impl Timestamp {
     }
 }
 
-#[pyclass(get_all, set_all, module = "redbb_driver.types")]
+#[pyclass(get_all, set_all, module = "ruson.types")]
 #[derive(Clone)]
 pub struct Regex {
     pattern: String,
@@ -142,7 +142,7 @@ pub struct Regex {
 impl Regex {
     fn __repr__(&self) -> String {
         format!(
-            "redbb_driver.types.Regex(regex=\"{}\", options=\"{}\")",
+            "ruson.types.Regex(regex=\"{}\", options=\"{}\")",
             self.pattern, self.options
         )
     }
@@ -152,7 +152,7 @@ impl Regex {
     }
 }
 
-#[pyclass(frozen, module = "redbb_driver.types")]
+#[pyclass(frozen, module = "ruson.types")]
 #[derive(Clone)]
 pub struct BinarySubtype {
     pub(crate) id: u8,
@@ -167,7 +167,7 @@ impl BinarySubtype {
     }
 
     fn __repr__(&self) -> String {
-        format!("redbb_driver.types.BinarySubtype.{}", self)
+        format!("ruson.types.BinarySubtype.{}", self)
     }
 
     fn __str__(&self) -> String {
@@ -201,7 +201,7 @@ impl Display for BinarySubtype {
     }
 }
 
-#[pyclass(frozen, module = "redbb_driver.types")]
+#[pyclass(frozen, module = "ruson.types")]
 #[derive(Clone)]
 pub struct Binary {
     #[pyo3(get)]
@@ -220,7 +220,7 @@ impl Binary {
             .unwrap();
 
         format!(
-            "redbb_driver.types.Binary(subtype={}, bytes=\"{}\")",
+            "ruson.types.Binary(subtype={}, bytes=\"{}\")",
             self.subtype, byte_string
         )
     }
@@ -252,7 +252,7 @@ impl Binary {
     }
 }
 
-#[pyclass(frozen, module = "redbb_driver.types")]
+#[pyclass(frozen, module = "ruson.types")]
 #[derive(Clone)]
 pub struct ObjectId {
     pub(crate) id: [u8; 12],
@@ -290,7 +290,7 @@ impl ObjectId {
             .reduce(|acc, v| acc + &v)
             .unwrap();
 
-        format!("redbb_driver.types.ObjectId(\"{}\")", byte_string)
+        format!("ruson.types.ObjectId(\"{}\")", byte_string)
     }
 
     fn __str__(&self) -> String {
@@ -316,7 +316,7 @@ impl ObjectId {
     }
 }
 
-#[pyclass(frozen, module = "redbb_driver.types")]
+#[pyclass(frozen, module = "ruson.types")]
 #[derive(Clone)]
 pub struct Decimal128 {
     pub(crate) bytes: [u8; 16],
@@ -333,7 +333,7 @@ impl Decimal128 {
             .reduce(|acc, v| acc + &v)
             .unwrap();
 
-        format!("redbb_driver.types.Decimal128(\"{}\")", byte_string)
+        format!("ruson.types.Decimal128(\"{}\")", byte_string)
     }
 
     fn __str__(&self) -> String {

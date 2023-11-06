@@ -5,6 +5,7 @@ use pyo3::{exceptions, prelude::*};
 use super::collection_binding::Collection;
 
 #[pyclass]
+#[repr(transparent)]
 pub struct Database(pub(crate) mongodb::Database);
 
 #[pyfunction]

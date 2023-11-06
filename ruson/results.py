@@ -1,4 +1,4 @@
-from .redbb_driver import bindings
+from .ruson import bindings
 
 InsertOneResult = bindings.types.InsertOneResult
 InsertManyResult = bindings.types.InsertManyResult

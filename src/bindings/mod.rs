@@ -26,7 +26,7 @@ pub fn client(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     )?)?;
     submodule.add_function(wrap_pyfunction!(client_binding::create_session, submodule)?)?;
     submodule.add_function(wrap_pyfunction!(client_binding::shutdown, submodule)?)?;
-    // let name = format!("redbb_driver.{}.{}", m.name()?, submodule.name()?);
+    // let name = format!("ruson.{}.{}", m.name()?, submodule.name()?);
     // py_run!(
     //     py,
     //     submodule,
@@ -45,7 +45,7 @@ pub fn database(py: Python<'_>, m: &PyModule) -> PyResult<()> {
         database_biding::list_collections,
         submodule
     )?)?;
-    // let name = format!("redbb_driver.{}.{}", m.name()?, submodule.name()?);
+    // let name = format!("ruson.{}.{}", m.name()?, submodule.name()?);
     // py_run!(
     //     py,
     //     submodule,
@@ -91,7 +91,7 @@ pub fn collection(py: Python<'_>, m: &PyModule) -> PyResult<()> {
         submodule
     )?)?;
     submodule.add_function(wrap_pyfunction!(collection_binding::drop, submodule)?)?;
-    // let name = format!("redbb_driver.{}.{}", m.name()?, submodule.name()?);
+    // let name = format!("ruson.{}.{}", m.name()?, submodule.name()?);
     // py_run!(
     //     py,
     //     submodule,
@@ -120,7 +120,7 @@ pub fn iterator(py: Python<'_>, m: &PyModule) -> PyResult<()> {
         iterator_binding::index_current,
         submodule
     )?)?;
-    // let name = format!("redbb_driver.{}.{}", m.name()?, submodule.name()?);
+    // let name = format!("ruson.{}.{}", m.name()?, submodule.name()?);
     // py_run!(
     //     py,
     //     submodule,
@@ -154,7 +154,7 @@ pub fn types(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     submodule.add_class::<results_binding::IndexResultIterator>()?;
     submodule.add_class::<index_binding::IndexModel>()?;
     submodule.add_class::<index_binding::IndexOptions>()?;
-    // let name = format!("redbb_driver.{}.{}", m.name()?, submodule.name()?);
+    // let name = format!("ruson.{}.{}", m.name()?, submodule.name()?);
     // py_run!(
     //     py,
     //     submodule,

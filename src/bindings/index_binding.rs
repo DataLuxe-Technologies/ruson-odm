@@ -2,7 +2,7 @@ use pyo3::prelude::*;
 
 use super::document_binding::Document;
 
-#[pyclass(frozen, get_all, module = "redbb_driver.types")]
+#[pyclass(frozen, get_all, module = "ruson.types")]
 #[derive(Clone)]
 pub struct IndexOptions {
     /// Specifies a name outside the default generated name.
@@ -91,11 +91,11 @@ impl IndexOptions {
     }
 
     fn __repr__(&self) -> String {
-        format!("redbb_driver.types.IndexOptions(...)")
+        format!("ruson.types.IndexOptions(...)")
     }
 }
 
-#[pyclass(frozen, get_all, module = "redbb_driver.types")]
+#[pyclass(frozen, get_all, module = "ruson.types")]
 #[derive(Clone)]
 pub struct IndexModel {
     /// Specifies the index’s fields. For each field, specify a key-value pair in which the key is
@@ -114,6 +114,6 @@ impl IndexModel {
     }
 
     fn __repr__(&self) -> String {
-        format!("redbb_driver.types.IndexModel(...)")
+        format!("ruson.types.IndexModel(...)")
     }
 }

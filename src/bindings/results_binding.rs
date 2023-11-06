@@ -39,9 +39,11 @@ pub struct CreateIndexesResult {
 }
 
 #[pyclass(frozen)]
+#[repr(transparent)]
 #[derive(Clone)]
 pub struct DocumentResultIterator(pub(crate) Arc<Mutex<interface::ResultIterator<Document>>>);
 
 #[pyclass(frozen)]
+#[repr(transparent)]
 #[derive(Clone)]
 pub struct IndexResultIterator(pub(crate) Arc<Mutex<interface::ResultIterator<IndexModel>>>);

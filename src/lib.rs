@@ -4,7 +4,7 @@ mod bindings;
 mod interface;
 
 #[pymodule]
-fn redbb_driver(py: Python<'_>, m: &PyModule) -> PyResult<()> {
+fn ruson(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     let rust_module = PyModule::new(py, "bindings")?;
     bindings::client(py, rust_module)?;
     bindings::database(py, rust_module)?;

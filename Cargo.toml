@@ -1,10 +1,10 @@
 [package]
-name = "redbb_driver"
+name = "ruson"
 version = "1.0.0"
 edition = "2021"
 
 [lib]
-name = "redbb_driver"
+name = "ruson"
 crate-type = ["cdylib"]
 
 [dependencies]

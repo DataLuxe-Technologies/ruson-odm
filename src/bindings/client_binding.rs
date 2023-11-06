@@ -8,10 +8,12 @@ use super::database_biding::Database;
 use crate::interface;
 
 #[pyclass(frozen)]
+#[repr(transparent)]
 #[derive(Clone)]
 pub struct Client(pub(crate) mongodb::Client);
 
 #[pyclass]
+#[repr(transparent)]
 #[derive(Clone)]
 pub struct ClientSession(pub(crate) Arc<Mutex<mongodb::ClientSession>>);
 

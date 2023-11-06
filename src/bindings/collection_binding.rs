@@ -18,6 +18,7 @@ use super::index_binding::IndexModel;
 use super::results_binding::*;
 
 #[pyclass(frozen)]
+#[repr(transparent)]
 #[derive(Clone)]
 pub struct Collection(pub mongodb::Collection<bson::Document>);
 

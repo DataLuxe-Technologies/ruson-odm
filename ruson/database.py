@@ -1,5 +1,5 @@
 from .collection import Collection
-from .redbb_driver import bindings
+from .ruson import bindings
 
 rust_database = bindings.database
 

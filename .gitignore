@@ -276,4 +276,4 @@ dkms.conf
 # Compiled Static libraries
 *.lai
 
-redbb-driver/target/*
+ruson/target/*
