@@ -22,6 +22,7 @@ BaseTypes = (
     | Timestamp
     | datetime
     | Undefined
+    | None
 )
 CollectionTypes = (
     List[BaseTypes | CollectionTypes]

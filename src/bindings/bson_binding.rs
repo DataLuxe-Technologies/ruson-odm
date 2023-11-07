@@ -470,7 +470,7 @@ impl<'source> FromPyObject<'source> for Bson {
             }
             Ok(Bson(bson::Bson::Array(bson_vector)))
         } else if ob.is_instance_of::<Document>() {
-            Ok(Bson(bson::Bson::Null))
+            Ok(Bson(bson::Bson::Document(ob.extract::<Document>()?.0)))
         } else if ob.is_instance_of::<PyBool>() {
             let value = ob.extract::<bool>()?;
             Ok(Bson(bson::Bson::Boolean(value)))
