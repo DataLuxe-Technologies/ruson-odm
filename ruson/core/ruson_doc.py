@@ -1,6 +1,6 @@
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Self, Type, TypeVar
+from typing import Awaitable, Callable, Literal, Self, Type, TypeVar, overload
 
 import pytz
 from pydantic import BaseModel, ConfigDict, Field
@@ -16,7 +16,16 @@ from ..driver.results import (
     UpdateResult,
 )
 from ..driver.session import Session
-from ..driver.types import Document, IndexModel, ObjectId
+from ..driver.types import (
+    Document,
+    DocumentTypes,
+    FieldSort,
+    Filter,
+    IndexModel,
+    ObjectId,
+    Projection,
+    Update,
+)
 from .instance import Ruson
 
 T = TypeVar("T")
@@ -103,12 +112,44 @@ class RusonDoc(BaseModel):
         )
         await collection.drop_indexes(indexes=indexes, timeout=timeout)
 
+    @overload
+    async def find(
+        self: Self,
+        many: Literal[False],
+        skip: int | None = None,
+        sort: list[FieldSort] | None = None,
+        batch_size: int | None = None,
+        projection: Projection | Document | None = None,
+        timeout: int | None = None,
+        formatter: Callable[[Document], T | Awaitable[T]] = noop_formatter,
+        session: Session | None = None,
+        db_name: str | None = None,
+        conn_name: str | None = None,
+    ) -> T:
+        ...
+
+    @overload
+    async def find(
+        self: Self,
+        many: Literal[True],
+        skip: int | None = None,
+        sort: list[FieldSort] | None = None,
+        batch_size: int | None = None,
+        projection: Projection | Document | None = None,
+        timeout: int | None = None,
+        formatter: Callable[[Document], T | Awaitable[T]] = noop_formatter,
+        session: Session | None = None,
+        db_name: str | None = None,
+        conn_name: str | None = None,
+    ) -> DocumentsCursor[T]:
+        ...
+
     async def find(
         self: Self,
         skip: int | None = None,
-        sort: Any | None = None,
+        sort: list[FieldSort] | None = None,
         batch_size: int | None = None,
-        projection: Any | None = None,
+        projection: Projection | Document | None = None,
         timeout: int | None = None,
         many: bool = False,
         formatter: Callable[[Document], T | Awaitable[T]] = noop_formatter,
@@ -145,10 +186,10 @@ class RusonDoc(BaseModel):
     @classmethod
     async def find_one(
         cls: Type[Self],
-        filter: Any,
+        filter: Filter,
         skip: int | None = None,
-        sort: Any | None = None,
-        projection: Any | None = None,
+        sort: list[FieldSort] | None = None,
+        projection: Projection | Document | None = None,
         timeout: int | None = None,
         formatter: Callable[[Document], T | Awaitable[T]] = noop_formatter,
         session: Session | None = None,
@@ -171,9 +212,9 @@ class RusonDoc(BaseModel):
     @classmethod
     async def find_many(
         cls: Type[Self],
-        filter: Any = None,
-        sort: Any = None,
-        projection: Any | None = None,
+        filter: Filter = None,
+        sort: list[FieldSort] = None,
+        projection: Projection | Document | None = None,
         skip: int | None = None,
         limit: int | None = None,
         batch_size: int | None = None,
@@ -201,7 +242,7 @@ class RusonDoc(BaseModel):
     @classmethod
     async def aggregate(
         cls: Type[Self],
-        pipeline: list[Any],
+        pipeline: list[Document],
         batch_size: int | None = None,
         timeout: int | None = None,
         formatter: Callable[[Document], T | Awaitable[T]] = noop_formatter,
@@ -224,7 +265,7 @@ class RusonDoc(BaseModel):
     async def distinct(
         cls: Type[Self],
         field_name: str,
-        filter: Any | None = None,
+        filter: Filter | None = None,
         timeout: int | None = None,
         session: Session | None = None,
         db_name: str | None = None,
@@ -243,7 +284,7 @@ class RusonDoc(BaseModel):
     @classmethod
     async def count_documents(
         cls: Type[Self],
-        filter: Any = None,
+        filter: Filter = None,
         timeout: int | None = None,
         db_name: str | None = None,
         conn_name: str | None = None,
@@ -269,7 +310,7 @@ class RusonDoc(BaseModel):
     @classmethod
     async def insert_one(
         cls: Type[Self],
-        document: Any,
+        document: DocumentTypes,
         session: Session | None = None,
         db_name: str | None = None,
         conn_name: str | None = None,
@@ -282,7 +323,7 @@ class RusonDoc(BaseModel):
     @classmethod
     async def insert_many(
         cls: Type[Self],
-        documents: list[Any],
+        documents: list[DocumentTypes],
         session: Session | None = None,
         db_name: str | None = None,
         conn_name: str | None = None,
@@ -294,8 +335,8 @@ class RusonDoc(BaseModel):
 
     async def update(
         self: Self,
-        filter: Any,
-        array_filters: list[Any] | None = None,
+        filter: Filter,
+        array_filters: list[Document] | None = None,
         session: Session | None = None,
         db_name: str | None = None,
         conn_name: str | None = None,
@@ -312,9 +353,9 @@ class RusonDoc(BaseModel):
     @classmethod
     async def update_one(
         cls: Type[Self],
-        update: Any,
-        filter: Any,
-        array_filters: list[Any] | None = None,
+        update: Update,
+        filter: Filter,
+        array_filters: list[Document] | None = None,
         session: Session | None = None,
         db_name: str | None = None,
         conn_name: str | None = None,
@@ -331,8 +372,8 @@ class RusonDoc(BaseModel):
 
     async def upsert(
         self: Self,
-        filter: Any,
-        array_filters: list[Any] | None = None,
+        filter: Filter,
+        array_filters: list[Document] | None = None,
         session: Session | None = None,
         db_name: str | None = None,
         conn_name: str | None = None,
@@ -349,9 +390,9 @@ class RusonDoc(BaseModel):
     @classmethod
     async def upsert_one(
         cls: Type[Self],
-        update: Any,
-        filter: Any,
-        array_filters: list[Any] | None = None,
+        update: Update,
+        filter: Filter,
+        array_filters: list[Document] | None = None,
         session: Session | None = None,
         db_name: str | None = None,
         conn_name: str | None = None,
@@ -392,7 +433,7 @@ class RusonDoc(BaseModel):
     @classmethod
     async def delete_one(
         cls: Type[Self],
-        filter: Any,
+        filter: Filter,
         session: Session | None = None,
         db_name: str | None = None,
         conn_name: str | None = None,
@@ -405,7 +446,7 @@ class RusonDoc(BaseModel):
     @classmethod
     async def delete_many(
         cls: Type[Self],
-        filter: Any,
+        filter: Filter,
         session: Session | None = None,
         db_name: str | None = None,
         conn_name: str | None = None,

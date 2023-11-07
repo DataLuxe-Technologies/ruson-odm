@@ -1,16 +1,16 @@
 from typing import Generic, Self, TypeVar
 
-from .types import AllowedTypes, IndexModel
+from .types import BaseTypes, IndexModel
 
 T = TypeVar("T")
 
 class InsertOneResult:
     @property
-    def inserted_id(self) -> AllowedTypes: ...
+    def inserted_id(self) -> BaseTypes: ...
 
 class InsertManyResult:
     @property
-    def inserted_ids(self) -> list[AllowedTypes]: ...
+    def inserted_ids(self) -> list[BaseTypes]: ...
 
 class UpdateResult:
     @property
@@ -18,7 +18,7 @@ class UpdateResult:
     @property
     def modified_count(self) -> int: ...
     @property
-    def upserted_id(self) -> AllowedTypes | None: ...
+    def upserted_id(self) -> BaseTypes | None: ...
 
 class DeleteResult:
     @property

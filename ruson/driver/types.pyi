@@ -1,7 +1,16 @@
-from typing import Callable, Iterable, Self
+from datetime import datetime
+from enum import Enum
+from typing import Callable, Iterable, List, Literal, Mapping, Self
 
-AllowedTypes = (
-    MaxKey
+from pydantic import BaseModel
+
+BaseTypes = (
+    int
+    | float
+    | bool
+    | str
+    | ObjectId
+    | MaxKey
     | MinKey
     | Symbol
     | JavaScriptCodeWithScope
@@ -9,12 +18,51 @@ AllowedTypes = (
     | Binary
     | JavaScriptCode
     | Decimal128
-    | ObjectId
     | Regex
     | Timestamp
+    | datetime
     | Undefined
+)
+CollectionTypes = (
+    List[BaseTypes | CollectionTypes]
+    | Mapping[str, BaseTypes | CollectionTypes]
     | Document
 )
+
+DocumentTypes = Document | Mapping[str, CollectionTypes | BaseTypes]
+
+class Direction(Enum):
+    ASCENDING: 1
+    DESCENDING: -1
+
+class FieldSort(BaseModel):
+    field: str
+    direction: Direction
+
+class FieldProjection(BaseModel):
+    field: str
+    include: bool
+
+class Projection(BaseModel):
+    field_projections: list[FieldProjection]
+    include_id: bool = True
+
+UpdateOperators = Literal[
+    "$set",
+    "$inc",
+    "$push",
+    "$unset",
+    "$replaceRoot",
+    "$rename",
+    "$addToSet",
+    "$pop",
+    "$pull",
+]
+
+Update = Mapping[UpdateOperators, Mapping[str, CollectionTypes | BaseTypes]]
+
+FilterTypes = int | float | bool | str | Mapping[str, FilterTypes]
+Filter = Mapping[str, FilterTypes]
 
 class Document:
     def __init__(self) -> None: ...
@@ -25,20 +73,20 @@ class Document:
     def is_empty(self) -> bool: ...
     def contains(self, key: str) -> bool: ...
     def __contains__(self, key: str) -> bool: ...
-    def get(self, key: str) -> AllowedTypes | None: ...
-    def __getitem__(self, key: str) -> AllowedTypes: ...
-    def set(self, key: str, value: AllowedTypes) -> None: ...
-    def __setitem__(self, key: str, value: AllowedTypes) -> None: ...
+    def get(self, key: str) -> BaseTypes | CollectionTypes | None: ...
+    def __getitem__(self, key: str) -> BaseTypes | CollectionTypes: ...
+    def set(self, key: str, value: BaseTypes | CollectionTypes) -> None: ...
+    def __setitem__(self, key: str, value: BaseTypes | CollectionTypes) -> None: ...
     def __delitem__(self, key: str) -> None: ...
     def keys(self) -> list[str]: ...
-    def values(self) -> list[AllowedTypes]: ...
-    def items(self) -> list[tuple[str, AllowedTypes]]: ...
-    def __iter__(self) -> Iterable[tuple[str, AllowedTypes]]: ...
+    def values(self) -> list[BaseTypes | CollectionTypes]: ...
+    def items(self) -> list[tuple[str, BaseTypes | CollectionTypes]]: ...
+    def __iter__(self) -> Iterable[tuple[str, BaseTypes | CollectionTypes]]: ...
 
 Document.__annotations__["del"] = Callable[[str], None]
 
 class DocumentIter:
-    def __next__(self) -> tuple[str, AllowedTypes] | None: ...
+    def __next__(self) -> tuple[str, BaseTypes | CollectionTypes] | None: ...
     def __repr__(self) -> str: ...
     def __len__(self) -> int: ...
 
