@@ -27,18 +27,40 @@ pub fn find_one<'a>(
     py: Python<'a>,
     collection: Collection,
     filter: Document,
+    skip: Option<u64>,
+    sort: Option<Document>,
+    projection: Option<Document>,
+    timeout: Option<u64>,
     session: Option<ClientSession>,
 ) -> PyResult<&'a PyAny> {
-    pyo3_asyncio::tokio::future_into_py::<_, Document>(py, async move {
-        let result = match session {
-            Some(s) => {
-                let s = s.0.clone();
-                interface::find_one(collection.0, filter.0, Some(s)).await
-            }
-            None => interface::find_one(collection.0, filter.0, None).await,
+    pyo3_asyncio::tokio::future_into_py::<_, Option<Document>>(py, async move {
+        let sort = match sort {
+            Some(s) => Some(s.0),
+            None => None,
         };
+        let projection = match projection {
+            Some(p) => Some(p.0),
+            None => None,
+        };
+        let session = match session {
+            Some(s) => Some(s.0),
+            None => None,
+        };
+        let result = interface::find_one(
+            collection.0,
+            filter.0,
+            skip,
+            sort,
+            projection,
+            timeout,
+            session,
+        )
+        .await;
         match result {
-            Ok(c) => Ok(Document(c)),
+            Ok(d) => Ok(match d {
+                Some(d) => Some(Document(d)),
+                None => None,
+            }),
             Err(e) => Err(PyErr::new::<exceptions::PyValueError, _>(e.to_string())),
         }
     })
@@ -49,22 +71,43 @@ pub fn find_many<'a>(
     py: Python<'a>,
     collection: Collection,
     filter: Option<Document>,
+    skip: Option<u64>,
+    limit: Option<i64>,
+    sort: Option<Document>,
+    batch_size: Option<u32>,
+    projection: Option<Document>,
+    timeout: Option<u64>,
     session: Option<ClientSession>,
 ) -> PyResult<&'a PyAny> {
     pyo3_asyncio::tokio::future_into_py::<_, DocumentResultIterator>(py, async move {
-        let result = match session {
-            Some(s) => {
-                let s = s.0.clone();
-                match filter {
-                    Some(f) => interface::find_many(collection.0, Some(f.0), Some(s)).await,
-                    None => interface::find_many(collection.0, None, Some(s)).await,
-                }
-            }
-            None => match filter {
-                Some(f) => interface::find_many(collection.0, Some(f.0), None).await,
-                None => interface::find_many(collection.0, None, None).await,
-            },
+        let filter = match filter {
+            Some(f) => Some(f.0),
+            None => None,
         };
+        let sort = match sort {
+            Some(s) => Some(s.0),
+            None => None,
+        };
+        let projection = match projection {
+            Some(p) => Some(p.0),
+            None => None,
+        };
+        let session = match session {
+            Some(s) => Some(s.0),
+            None => None,
+        };
+        let result = interface::find_many(
+            collection.0,
+            filter,
+            skip,
+            limit,
+            sort,
+            batch_size,
+            projection,
+            timeout,
+            session,
+        )
+        .await;
         match result {
             Ok(v) => Ok(DocumentResultIterator(Arc::new(Mutex::new(v)))),
             Err(e) => Err(PyErr::new::<exceptions::PyValueError, _>(e.to_string())),
@@ -80,13 +123,11 @@ pub fn insert_one<'a>(
     session: Option<ClientSession>,
 ) -> PyResult<&'a PyAny> {
     pyo3_asyncio::tokio::future_into_py::<_, InsertOneResult>(py, async move {
-        let result = match session {
-            Some(s) => {
-                let s = s.0.clone();
-                interface::insert_one(collection.0, document.0, Some(s)).await
-            }
-            None => interface::insert_one(collection.0, document.0, None).await,
+        let session = match session {
+            Some(s) => Some(s.0),
+            None => None,
         };
+        let result = interface::insert_one(collection.0, document.0, session).await;
         match result {
             Ok(v) => Python::with_gil(|p| {
                 Ok(InsertOneResult {
@@ -107,13 +148,11 @@ pub fn insert_many<'a>(
 ) -> PyResult<&'a PyAny> {
     pyo3_asyncio::tokio::future_into_py::<_, InsertManyResult>(py, async move {
         let docs = documents.into_iter().map(|d| d.0);
-        let result = match session {
-            Some(s) => {
-                let s = s.0.clone();
-                interface::insert_many(collection.0, docs, Some(s)).await
-            }
-            None => interface::insert_many(collection.0, docs, None).await,
+        let session = match session {
+            Some(s) => Some(s.0),
+            None => None,
         };
+        let result = interface::insert_many(collection.0, docs, session).await;
         match result {
             Ok(v) => Python::with_gil(|p| {
                 Ok(InsertManyResult {
@@ -135,28 +174,39 @@ pub fn update_one<'a>(
     collection: Collection,
     update: Document,
     filter: Document,
+    upsert: Option<bool>,
+    array_filters: Option<Vec<Document>>,
     session: Option<ClientSession>,
 ) -> PyResult<&'a PyAny> {
     pyo3_asyncio::tokio::future_into_py::<_, UpdateResult>(py, async move {
-        let result = match session {
-            Some(s) => {
-                let s = s.0.clone();
-                interface::update_one(collection.0, update.0, filter.0, Some(s)).await
-            }
-            None => interface::update_one(collection.0, update.0, filter.0, None).await,
+        let array_filters = match array_filters {
+            Some(array_filters) => Some(array_filters.into_iter().map(|d| d.0).collect()),
+            None => None,
         };
+        let session = match session {
+            Some(s) => Some(s.0),
+            None => None,
+        };
+        let result = interface::update_one(
+            collection.0,
+            update.0,
+            filter.0,
+            upsert,
+            array_filters,
+            session,
+        )
+        .await;
         match result {
             Ok(v) => Python::with_gil(|p| {
-                let upserted_id = if let Some(upserted_id) = v.upserted_id {
-                    Some(Bson(upserted_id).into_py(p))
-                } else {
-                    None
+                let upserted_id = match v.upserted_id {
+                    Some(upserted_id) => Some(Bson(upserted_id).into_py(p)),
+                    None => None,
                 };
 
                 Ok(UpdateResult {
                     matched_count: v.matched_count,
                     modified_count: v.modified_count,
-                    upserted_id: upserted_id,
+                    upserted_id,
                 })
             }),
             Err(e) => Err(PyErr::new::<exceptions::PyValueError, _>(e.to_string())),
@@ -172,18 +222,15 @@ pub fn delete_one<'a>(
     session: Option<ClientSession>,
 ) -> PyResult<&'a PyAny> {
     pyo3_asyncio::tokio::future_into_py::<_, DeleteResult>(py, async move {
-        let result = match session {
-            Some(s) => {
-                let s = s.0.clone();
-                interface::delete_one(collection.0, filter.0, Some(s)).await
-            }
-            None => interface::delete_one(collection.0, filter.0, None).await,
+        let session = match session {
+            Some(s) => Some(s.0),
+            None => None,
         };
+        let result = interface::delete_one(collection.0, filter.0, session).await;
         match result {
             Ok(v) => Ok(DeleteResult {
                 deleted_count: v.deleted_count,
             }),
-
             Err(e) => Err(PyErr::new::<exceptions::PyValueError, _>(e.to_string())),
         }
     })
@@ -201,15 +248,11 @@ pub fn delete_many<'a>(
             Some(f) => f.0,
             None => bson::Document::new(),
         };
-
-        let result = match session {
-            Some(s) => {
-                let s = s.0.clone();
-                interface::delete_many(collection.0, filter, Some(s)).await
-            }
-            None => interface::delete_many(collection.0, filter, None).await,
+        let session = match session {
+            Some(s) => Some(s.0),
+            None => None,
         };
-
+        let result = interface::delete_many(collection.0, filter, session).await;
         match result {
             Ok(v) => Ok(DeleteResult {
                 deleted_count: v.deleted_count,
@@ -224,17 +267,17 @@ pub fn aggregate<'a>(
     py: Python<'a>,
     collection: Collection,
     pipeline: Vec<Document>,
+    batch_size: Option<u32>,
+    timeout: Option<u64>,
     session: Option<ClientSession>,
 ) -> PyResult<&'a PyAny> {
     pyo3_asyncio::tokio::future_into_py::<_, DocumentResultIterator>(py, async move {
         let docs = pipeline.into_iter().map(|d| d.0);
-        let result = match session {
-            Some(s) => {
-                let s = s.0.clone();
-                interface::aggregate(collection.0, docs, Some(s)).await
-            }
-            None => interface::aggregate(collection.0, docs, None).await,
+        let session = match session {
+            Some(s) => Some(s.0),
+            None => None,
         };
+        let result = interface::aggregate(collection.0, docs, batch_size, timeout, session).await;
         match result {
             Ok(v) => Ok(DocumentResultIterator(Arc::new(Mutex::new(v)))),
             Err(e) => Err(PyErr::new::<exceptions::PyValueError, _>(e.to_string())),
@@ -248,6 +291,7 @@ pub fn distinct<'a>(
     collection: Collection,
     field_name: String,
     filter: Option<Document>,
+    timeout: Option<u64>,
     session: Option<ClientSession>,
 ) -> PyResult<&'a PyAny> {
     pyo3_asyncio::tokio::future_into_py::<_, Vec<PyObject>>(py, async move {
@@ -255,14 +299,12 @@ pub fn distinct<'a>(
             Some(v) => Some(v.0),
             None => None,
         };
-
-        let result = match session {
-            Some(s) => {
-                let s = s.0.clone();
-                interface::distinct(collection.0, field_name.as_str(), filter, Some(s)).await
-            }
-            None => interface::distinct(collection.0, field_name.as_str(), filter, None).await,
+        let session = match session {
+            Some(s) => Some(s.0),
+            None => None,
         };
+        let result =
+            interface::distinct(collection.0, field_name.as_str(), filter, timeout, session).await;
         match result {
             Ok(v) => Python::with_gil(|p| Ok(v.into_iter().map(|b| Bson(b).into_py(p)).collect())),
             Err(e) => Err(PyErr::new::<exceptions::PyValueError, _>(e.to_string())),
@@ -271,9 +313,13 @@ pub fn distinct<'a>(
 }
 
 #[pyfunction]
-pub fn list_indexes<'a>(py: Python<'a>, collection: Collection) -> PyResult<&'a PyAny> {
+pub fn list_indexes<'a>(
+    py: Python<'a>,
+    collection: Collection,
+    timeout: Option<u64>,
+) -> PyResult<&'a PyAny> {
     pyo3_asyncio::tokio::future_into_py::<_, IndexResultIterator>(py, async move {
-        let result = interface::list_indexes(collection.0).await;
+        let result = interface::list_indexes(collection.0, timeout).await;
         match result {
             Ok(v) => Ok(IndexResultIterator(Arc::new(Mutex::new(v)))),
             Err(e) => Err(PyErr::new::<exceptions::PyValueError, _>(e.to_string())),
@@ -286,45 +332,40 @@ pub fn create_indexes<'a>(
     py: Python<'a>,
     collection: Collection,
     indexes: Vec<IndexModel>,
+    timeout: Option<u64>,
 ) -> PyResult<&'a PyAny> {
     pyo3_asyncio::tokio::future_into_py::<_, CreateIndexesResult>(py, async move {
         let mut mongo_indexes = Vec::with_capacity(indexes.len());
         for py_idx in indexes {
-            let keys = Python::with_gil(|p| py_idx.keys.extract::<Document>(p))?.0;
-            let options = if let Some(options) = py_idx.options {
-                Some(
+            let keys = py_idx.keys.0;
+            let options = match py_idx.options {
+                Some(options) => Some(
                     mongodb::options::IndexOptions::builder()
                         .name(options.name)
                         .sparse(options.sparse)
                         .unique(options.unique)
                         .default_language(options.default_language)
                         .language_override(options.language_override)
-                        .weights(if let Some(w) = options.weigths {
-                            Some(w.0)
-                        } else {
-                            None
+                        .weights(match options.weigths {
+                            Some(w) => Some(w.0),
+                            None => None,
                         })
                         .bits(options.bits)
                         .max(options.max)
                         .min(options.min)
                         .bucket_size(options.bucket_size)
-                        .partial_filter_expression(
-                            if let Some(f) = options.partial_filter_expression {
-                                Some(f.0)
-                            } else {
-                                None
-                            },
-                        )
-                        .wildcard_projection(if let Some(p) = options.wildcard_projection {
-                            Some(p.0)
-                        } else {
-                            None
+                        .partial_filter_expression(match options.partial_filter_expression {
+                            Some(f) => Some(f.0),
+                            None => None,
+                        })
+                        .wildcard_projection(match options.wildcard_projection {
+                            Some(p) => Some(p.0),
+                            None => None,
                         })
                         .hidden(options.hidden)
                         .build(),
-                )
-            } else {
-                None
+                ),
+                None => None,
             };
             let mongo_idx = mongodb::IndexModel::builder()
                 .keys(keys)
@@ -333,7 +374,8 @@ pub fn create_indexes<'a>(
             mongo_indexes.push(mongo_idx);
         }
 
-        let result = interface::create_indexes(collection.0, mongo_indexes.into_iter()).await;
+        let result =
+            interface::create_indexes(collection.0, mongo_indexes.into_iter(), timeout).await;
         match result {
             Ok(v) => Ok(CreateIndexesResult {
                 index_names: v.index_names,
@@ -348,14 +390,14 @@ pub fn drop_indexes<'a>(
     py: Python<'a>,
     collection: Collection,
     indexes: Option<Vec<String>>,
+    timeout: Option<u64>,
 ) -> PyResult<&'a PyAny> {
     pyo3_asyncio::tokio::future_into_py(py, async move {
-        let indexes = if let Some(idxs) = indexes {
-            Some(idxs.into_iter())
-        } else {
-            None
+        let indexes = match indexes {
+            Some(idxs) => Some(idxs.into_iter()),
+            None => None,
         };
-        let result = interface::drop_indexes(collection.0, indexes).await;
+        let result = interface::drop_indexes(collection.0, indexes, timeout).await;
         match result {
             Ok(_) => Ok(()),
             Err(e) => Err(PyErr::new::<exceptions::PyValueError, _>(e.to_string())),
@@ -368,14 +410,14 @@ pub fn count_documents<'a>(
     py: Python<'a>,
     collection: Collection,
     filter: Option<Document>,
+    timeout: Option<u64>,
 ) -> PyResult<&'a PyAny> {
     pyo3_asyncio::tokio::future_into_py::<_, u64>(py, async move {
-        let filter = if let Some(f) = filter {
-            Some(f.0)
-        } else {
-            None
+        let filter = match filter {
+            Some(f) => Some(f.0),
+            None => None,
         };
-        let result = interface::count_documents(collection.0, filter).await;
+        let result = interface::count_documents(collection.0, filter, timeout).await;
         match result {
             Ok(v) => Ok(v),
             Err(e) => Err(PyErr::new::<exceptions::PyValueError, _>(e.to_string())),

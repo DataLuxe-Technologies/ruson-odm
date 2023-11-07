@@ -55,38 +55,34 @@ pub fn index_current<'a>(py: Python<'a>, iterator: IndexResultIterator) -> PyRes
         let result = inner_iterator.deserialize_current();
         match result {
             Ok(v) => {
-                let options = if let Some(opts) = v.options {
-                    Some(IndexOptions {
+                let keys = Document(v.keys);
+                let options = match v.options {
+                    Some(opts) => Some(IndexOptions {
                         name: opts.name,
                         sparse: opts.sparse,
                         unique: opts.unique,
                         default_language: opts.default_language,
                         language_override: opts.language_override,
-                        weigths: if let Some(w) = opts.weights {
-                            Some(Document(w))
-                        } else {
-                            None
+                        weigths: match opts.weights {
+                            Some(w) => Some(Document(w)),
+                            None => None,
                         },
                         bits: opts.bits,
                         max: opts.max,
                         min: opts.min,
                         bucket_size: opts.bucket_size,
-                        partial_filter_expression: if let Some(f) = opts.partial_filter_expression {
-                            Some(Document(f))
-                        } else {
-                            None
+                        partial_filter_expression: match opts.partial_filter_expression {
+                            Some(f) => Some(Document(f)),
+                            None => None,
                         },
-                        wildcard_projection: if let Some(p) = opts.wildcard_projection {
-                            Some(Document(p))
-                        } else {
-                            None
+                        wildcard_projection: match opts.wildcard_projection {
+                            Some(p) => Some(Document(p)),
+                            None => None,
                         },
                         hidden: opts.hidden,
-                    })
-                } else {
-                    None
+                    }),
+                    None => None,
                 };
-                let keys = Python::with_gil(|p| Document(v.keys).into_py(p));
                 Ok(IndexModel { keys, options })
             }
             Err(e) => Err(PyErr::new::<exceptions::PyValueError, _>(e.to_string())),

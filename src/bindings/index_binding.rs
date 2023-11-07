@@ -100,7 +100,7 @@ impl IndexOptions {
 pub struct IndexModel {
     /// Specifies the index’s fields. For each field, specify a key-value pair in which the key is
     /// the name of the field to index and the value is index type.
-    pub keys: PyObject,
+    pub keys: Document,
 
     /// The options for the index.
     pub options: Option<IndexOptions>,
@@ -109,7 +109,7 @@ pub struct IndexModel {
 #[pymethods]
 impl IndexModel {
     #[new]
-    fn new(keys: PyObject, options: Option<IndexOptions>) -> Self {
+    fn new(keys: Document, options: Option<IndexOptions>) -> Self {
         Self { keys, options }
     }
 

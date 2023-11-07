@@ -32,10 +32,9 @@ impl DocumentIter {
             IterNextOutput::Return("ACABOU")
         } else {
             self.index += 1;
-            if let Some(v) = self.document_items.pop() {
-                IterNextOutput::Yield(v)
-            } else {
-                IterNextOutput::Return("SE ACABÓ")
+            match self.document_items.pop() {
+                Some(v) => IterNextOutput::Yield(v),
+                None => IterNextOutput::Return("SE ACABÓ"),
             }
         }
     }

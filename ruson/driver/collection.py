@@ -2,8 +2,8 @@ from ..ruson import bindings
 from .results import (
     CreateIndexesResult,
     DeleteResult,
-    FindDocumentsIterator,
-    FindIndexesIterator,
+    DocumentsCursor,
+    IndexesCursor,
     InsertManyResult,
     InsertOneResult,
     UpdateResult,
@@ -21,20 +21,41 @@ class Collection:
     async def find_one(
         self,
         filter: Document,
+        skip: int | None = None,
+        sort: Document | None = None,
+        projection: Document | None = None,
+        timeout: int | None = None,
         session: Session | None = None,
-    ) -> Document:
+    ) -> Document | None:
         s = None if session is None else session._get_session()
-        return await rust_collection.find_one(self.__binding_collection, filter, s)
+        return await rust_collection.find_one(
+            self.__binding_collection, filter, skip, sort, projection, timeout, s
+        )
 
     async def find_many(
         self,
         filter: Document | None = None,
+        skip: int | None = None,
+        limit: int | None = None,
+        sort: Document | None = None,
+        batch_size: int | None = None,
+        projection: Document | None = None,
+        timeout: int | None = None,
         session: Session | None = None,
-    ) -> FindDocumentsIterator:
+    ) -> DocumentsCursor:
         s = None if session is None else session._get_session()
-        return FindDocumentsIterator(
-            await rust_collection.find_many(self.__binding_collection, filter, s)
+        cursor = await rust_collection.find_many(
+            self.__binding_collection,
+            filter,
+            skip,
+            limit,
+            sort,
+            batch_size,
+            projection,
+            timeout,
+            s,
         )
+        return DocumentsCursor(cursor)
 
     async def insert_one(
         self,
@@ -58,11 +79,13 @@ class Collection:
         self,
         update: Document,
         filter: Document,
+        upsert: bool | None = None,
+        array_filters: list[Document] | None = None,
         session: Session | None = None,
     ) -> UpdateResult:
         s = None if session is None else session._get_session()
         return await rust_collection.update_one(
-            self.__binding_collection, update, filter, s
+            self.__binding_collection, update, filter, upsert, array_filters, s
         )
 
     async def delete_one(
@@ -84,37 +107,59 @@ class Collection:
     async def aggregate(
         self,
         pipeline: list[Document],
+        batch_size: int | None = None,
+        timeout: int | None = None,
         session: Session | None = None,
-    ) -> FindDocumentsIterator:
+    ) -> DocumentsCursor:
         s = None if session is None else session._get_session()
-        return FindDocumentsIterator(
-            await rust_collection.aggregate(self.__binding_collection, pipeline, s)
+        cursor = await rust_collection.aggregate(
+            self.__binding_collection, pipeline, batch_size, timeout, s
         )
+        return DocumentsCursor(cursor)
 
     async def distinct(
         self,
         field_name: str,
         filter: Document | None = None,
+        timeout: int | None = None,
         session: Session | None = None,
     ) -> list[str]:
         s = None if session is None else session._get_session()
         return await rust_collection.distinct(
-            self.__binding_collection, field_name, filter, s
+            self.__binding_collection, field_name, filter, timeout, s
         )
 
-    async def list_indexes(self) -> FindIndexesIterator:
-        return FindIndexesIterator(
-            await rust_collection.list_indexes(self.__binding_collection)
+    async def list_indexes(
+        self,
+        timeout: int | None = None,
+    ) -> IndexesCursor:
+        cursor = await rust_collection.list_indexes(self.__binding_collection, timeout)
+        return IndexesCursor(cursor)
+
+    async def create_indexes(
+        self,
+        indexes: list[IndexModel],
+        timeout: int | None = None,
+    ) -> CreateIndexesResult:
+        return await rust_collection.create_indexes(
+            self.__binding_collection, indexes, timeout
         )
 
-    async def create_indexes(self, indexes: list[IndexModel]) -> CreateIndexesResult:
-        return await rust_collection.create_indexes(self.__binding_collection, indexes)
+    async def drop_indexes(
+        self,
+        indexes: list[str],
+        timeout: int | None = None,
+    ) -> None:
+        await rust_collection.drop_indexes(self.__binding_collection, indexes, timeout)
 
-    async def drop_indexes(self, indexes: list[str]) -> None:
-        await rust_collection.drop_indexes(self.__binding_collection, indexes)
-
-    async def count_documents(self, filter: Document | None = None) -> int:
-        return await rust_collection.count_documents(self.__binding_collection, filter)
+    async def count_documents(
+        self,
+        filter: Document | None = None,
+        timeout: int | None = None,
+    ) -> int:
+        return await rust_collection.count_documents(
+            self.__binding_collection, filter, timeout
+        )
 
     async def drop(self) -> None:
         await rust_collection.drop(self.__binding_collection)

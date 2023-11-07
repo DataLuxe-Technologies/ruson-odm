@@ -7,7 +7,7 @@ DeleteResult = bindings.types.DeleteResult
 CreateIndexesResult = bindings.types.CreateIndexesResult
 
 
-class FindDocumentsIterator:
+class DocumentsCursor:
     def __init__(self, binding_iterator) -> None:
         self.__binding_iterator = binding_iterator
 
@@ -29,7 +29,7 @@ class FindDocumentsIterator:
         return result
 
 
-class FindIndexesIterator:
+class IndexesCursor:
     def __init__(self, binding_iterator) -> None:
         self.__binding_iterator = binding_iterator
 
