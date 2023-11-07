@@ -1,11 +1,11 @@
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Self, Type
+from typing import Any, Awaitable, Callable, Self, Type, TypeVar
 
 import pytz
 from pydantic import BaseModel, ConfigDict, Field
 
-from ..driver.collection import Collection
+from ..driver.collection import Collection, noop_formatter
 from ..driver.results import (
     CreateIndexesResult,
     DeleteResult,
@@ -19,9 +19,7 @@ from ..driver.session import Session
 from ..driver.types import Document, IndexModel, ObjectId
 from .instance import Ruson
 
-# TODO: find one and find many should receive a formatter method or flag to build class from returned results
-# (either a formatter function will be informed, or a flag defaulting to false will be used to construct the class from
-# the returned results)
+T = TypeVar("T")
 
 
 def get_collection(
@@ -113,10 +111,11 @@ class RusonDoc(BaseModel):
         projection: Any | None = None,
         timeout: int | None = None,
         many: bool = False,
+        formatter: Callable[[Document], T | Awaitable[T]] = noop_formatter,
         session: Session | None = None,
         db_name: str | None = None,
         conn_name: str | None = None,
-    ) -> Self:
+    ) -> T | DocumentsCursor[T]:
         if many:
             return await self.find_many(
                 filter=self,
@@ -125,6 +124,7 @@ class RusonDoc(BaseModel):
                 batch_size=batch_size,
                 projection=projection,
                 timeout=timeout,
+                formatter=formatter,
                 session=session,
                 db_name=db_name,
                 conn_name=conn_name,
@@ -136,6 +136,7 @@ class RusonDoc(BaseModel):
             sort=sort,
             projection=projection,
             timeout=timeout,
+            formatter=formatter,
             session=session,
             db_name=db_name,
             conn_name=conn_name,
@@ -149,10 +150,11 @@ class RusonDoc(BaseModel):
         sort: Any | None = None,
         projection: Any | None = None,
         timeout: int | None = None,
+        formatter: Callable[[Document], T | Awaitable[T]] = noop_formatter,
         session: Session | None = None,
         db_name: str | None = None,
         conn_name: str | None = None,
-    ) -> Self:
+    ) -> T:
         collection = get_collection(
             cls.__name__.lower(), db_name=db_name, conn_name=conn_name
         )
@@ -162,6 +164,7 @@ class RusonDoc(BaseModel):
             sort=sort,
             projection=projection,
             timeout=timeout,
+            formatter=formatter,
             session=session,
         )
 
@@ -175,10 +178,11 @@ class RusonDoc(BaseModel):
         limit: int | None = None,
         batch_size: int | None = None,
         timeout: int | None = None,
+        formatter: Callable[[Document], T | Awaitable[T]] = noop_formatter,
         session: Session | None = None,
         db_name: str | None = None,
         conn_name: str | None = None,
-    ) -> DocumentsCursor:
+    ) -> DocumentsCursor[T]:
         collection = get_collection(
             cls.__name__.lower(), db_name=db_name, conn_name=conn_name
         )
@@ -190,6 +194,7 @@ class RusonDoc(BaseModel):
             batch_size=batch_size,
             projection=projection,
             timeout=timeout,
+            formatter=formatter,
             session=session,
         )
 
@@ -199,10 +204,11 @@ class RusonDoc(BaseModel):
         pipeline: list[Any],
         batch_size: int | None = None,
         timeout: int | None = None,
+        formatter: Callable[[Document], T | Awaitable[T]] = noop_formatter,
         session: Session | None = None,
         db_name: str | None = None,
         conn_name: str | None = None,
-    ) -> DocumentsCursor:
+    ) -> DocumentsCursor[T]:
         collection = get_collection(
             cls.__name__.lower(), db_name=db_name, conn_name=conn_name
         )
@@ -210,6 +216,7 @@ class RusonDoc(BaseModel):
             pipeline=pipeline,
             batch_size=batch_size,
             timeout=timeout,
+            formatter=formatter,
             session=session,
         )
 

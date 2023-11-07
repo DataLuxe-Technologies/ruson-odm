@@ -1,3 +1,5 @@
+from typing import Awaitable, Callable, TypeVar
+
 from ..ruson import bindings
 from .results import (
     CreateIndexesResult,
@@ -13,6 +15,12 @@ from .types import Document, IndexModel
 
 rust_collection = bindings.collection
 
+T = TypeVar("T")
+
+
+def noop_formatter(doc: Document) -> Document:
+    return doc
+
 
 class Collection:
     def __init__(self, binding_collection):
@@ -25,12 +33,20 @@ class Collection:
         sort: Document | None = None,
         projection: Document | None = None,
         timeout: int | None = None,
+        formatter: Callable[[Document], T | Awaitable[T]] = noop_formatter,
         session: Session | None = None,
     ) -> Document | None:
         s = None if session is None else session._get_session()
-        return await rust_collection.find_one(
+        result = await rust_collection.find_one(
             self.__binding_collection, filter, skip, sort, projection, timeout, s
         )
+        if result is None:
+            raise ValueError("Document not found")
+
+        formatted = formatter(result)
+        if isinstance(formatted, Awaitable):
+            return await formatted
+        return formatted
 
     async def find_many(
         self,
@@ -41,8 +57,9 @@ class Collection:
         batch_size: int | None = None,
         projection: Document | None = None,
         timeout: int | None = None,
+        formatter: Callable[[Document], T | Awaitable[T]] = noop_formatter,
         session: Session | None = None,
-    ) -> DocumentsCursor:
+    ) -> DocumentsCursor[T]:
         s = None if session is None else session._get_session()
         cursor = await rust_collection.find_many(
             self.__binding_collection,
@@ -55,7 +72,7 @@ class Collection:
             timeout,
             s,
         )
-        return DocumentsCursor(cursor)
+        return DocumentsCursor(cursor, formatter)
 
     async def insert_one(
         self,

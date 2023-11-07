@@ -1,3 +1,5 @@
+from typing import Awaitable, Callable, TypeVar
+
 from .results import (
     CreateIndexesResult,
     DeleteResult,
@@ -10,6 +12,10 @@ from .results import (
 from .session import Session
 from .types import Document, IndexModel
 
+T = TypeVar("T")
+
+def noop_formatter(doc: Document) -> Document: ...
+
 class Collection:
     async def find_one(
         self,
@@ -18,6 +24,7 @@ class Collection:
         sort: Document | None = None,
         projection: Document | None = None,
         timeout: int | None = None,
+        formatter: Callable[[Document], T | Awaitable[T]] = noop_formatter,
         session: Session | None = None,
     ) -> Document: ...
     async def find_many(
@@ -29,6 +36,7 @@ class Collection:
         batch_size: int | None = None,
         projection: Document | None = None,
         timeout: int | None = None,
+        formatter: Callable[[Document], T | Awaitable[T]] = noop_formatter,
         session: Session | None = None,
     ) -> DocumentsCursor: ...
     async def insert_one(

@@ -1,4 +1,7 @@
+from typing import Awaitable, Callable, Generic, Self, TypeVar
+
 from ..ruson import bindings
+from .types import Document, IndexModel
 
 InsertOneResult = bindings.types.InsertOneResult
 InsertManyResult = bindings.types.InsertManyResult
@@ -6,15 +9,20 @@ UpdateResult = bindings.types.UpdateResult
 DeleteResult = bindings.types.DeleteResult
 CreateIndexesResult = bindings.types.CreateIndexesResult
 
+T = TypeVar("T")
 
-class DocumentsCursor:
-    def __init__(self, binding_iterator) -> None:
+
+class DocumentsCursor(Generic[T]):
+    def __init__(
+        self, binding_iterator, formatter: Callable[[Document], T | Awaitable[T]]
+    ) -> None:
         self.__binding_iterator = binding_iterator
+        self.__formatter = formatter
 
-    def __aiter__(self):
+    def __aiter__(self) -> Self:
         return self
 
-    async def __anext__(self):
+    async def __anext__(self) -> T:
         try:
             result = await bindings.iterator.document_advance(self.__binding_iterator)
         except:
@@ -26,17 +34,21 @@ class DocumentsCursor:
         result = await bindings.iterator.document_current(self.__binding_iterator)
         if result is None:
             raise StopAsyncIteration
-        return result
+
+        formatted = self.__formatter(result)
+        if isinstance(formatted, Awaitable):
+            return await formatted
+        return formatted
 
 
 class IndexesCursor:
     def __init__(self, binding_iterator) -> None:
         self.__binding_iterator = binding_iterator
 
-    def __aiter__(self):
+    def __aiter__(self) -> Self:
         return self
 
-    async def __anext__(self):
+    async def __anext__(self) -> IndexModel:
         try:
             result = await bindings.iterator.index_advance(self.__binding_iterator)
         except:
