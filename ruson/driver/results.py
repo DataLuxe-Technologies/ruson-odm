@@ -19,6 +19,12 @@ class DocumentsCursor(Generic[T]):
         self.__binding_iterator = binding_iterator
         self.__formatter = formatter
 
+    async def tolist(self) -> list[T]:
+        result = []
+        async for item in self:
+            result.append(item)
+        return result
+
     def __aiter__(self) -> Self:
         return self
 

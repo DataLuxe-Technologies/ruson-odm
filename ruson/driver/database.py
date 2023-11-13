@@ -18,3 +18,6 @@ class Database:
 
     async def drop(self) -> None:
         await rust_database.drop(self.__binding_database)
+
+    def __getitem__(self, collection_name: str) -> Collection:
+        return self.collection(collection_name)

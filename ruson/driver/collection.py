@@ -35,7 +35,7 @@ class Collection:
         timeout: int | None = None,
         formatter: Callable[[Document], T | Awaitable[T]] = noop_formatter,
         session: Session | None = None,
-    ) -> Document | None:
+    ) -> Document:
         s = None if session is None else session._get_session()
         result = await rust_collection.find_one(
             self.__binding_collection, filter, skip, sort, projection, timeout, s
