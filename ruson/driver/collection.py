@@ -29,7 +29,6 @@ class Collection:
     async def find_one(
         self,
         filter: Document,
-        skip: int | None = None,
         sort: Document | None = None,
         projection: Document | None = None,
         timeout: int | None = None,
@@ -38,7 +37,7 @@ class Collection:
     ) -> Document:
         s = None if session is None else session._get_session()
         result = await rust_collection.find_one(
-            self.__binding_collection, filter, skip, sort, projection, timeout, s
+            self.__binding_collection, filter, sort, projection, timeout, s
         )
         if result is None:
             raise ValueError("Document not found")
@@ -164,7 +163,7 @@ class Collection:
 
     async def drop_indexes(
         self,
-        indexes: list[str],
+        indexes: list[str] | None = None,
         timeout: int | None = None,
     ) -> None:
         await rust_collection.drop_indexes(self.__binding_collection, indexes, timeout)

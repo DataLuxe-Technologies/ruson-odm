@@ -3,8 +3,7 @@ use mongodb::{
     error::Result,
     options::{
         AggregateOptions, CountOptions, CreateIndexOptions, DistinctOptions, DropIndexOptions,
-        FindOneOptions, FindOptions, ListIndexesOptions, SessionOptions, TransactionOptions,
-        UpdateOptions,
+        FindOneOptions, FindOptions, ListIndexesOptions, TransactionOptions, UpdateOptions,
     },
     results::{CreateIndexesResult, DeleteResult, InsertManyResult, InsertOneResult, UpdateResult},
     Client, ClientSession, Collection, Cursor, IndexModel, SessionCursor,
@@ -314,14 +313,11 @@ pub(crate) async fn drop_indexes(
         .build();
     match indexes {
         Some(idxs) => {
-            let session_options = SessionOptions::builder()
-                .default_transaction_options(
-                    TransactionOptions::builder()
-                        .max_commit_time(Duration::from_secs(timeout_value))
-                        .build(),
-                )
+            let mut session = collection.client().start_session(None).await?;
+            let transaction_options = TransactionOptions::builder()
+                .max_commit_time(Duration::from_secs(timeout_value))
                 .build();
-            let mut session = collection.client().start_session(session_options).await?;
+            session.start_transaction(transaction_options).await?;
             for index in idxs {
                 collection
                     .drop_index_with_session(index, options.clone(), &mut session)

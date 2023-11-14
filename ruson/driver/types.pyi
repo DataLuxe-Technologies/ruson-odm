@@ -1,8 +1,8 @@
 from datetime import datetime
 from enum import Enum
-from typing import Callable, Iterable, List, Literal, Mapping, Self
+from typing import Any, Callable, Iterable, List, Literal, Mapping, Self
 
-from pydantic import BaseModel
+from pydantic_core import core_schema
 
 BaseTypes = (
     int
@@ -36,15 +36,15 @@ class Direction(Enum):
     ASCENDING: 1
     DESCENDING: -1
 
-class FieldSort(BaseModel):
+class FieldSort:
     field: str
     direction: Direction
 
-class FieldProjection(BaseModel):
+class FieldProjection:
     field: str
     include: bool
 
-class Projection(BaseModel):
+class Projection:
     field_projections: list[FieldProjection]
     include_id: bool = True
 
@@ -62,7 +62,7 @@ UpdateOperators = Literal[
 
 Update = Mapping[UpdateOperators, Mapping[str, CollectionTypes | BaseTypes]]
 
-FilterTypes = int | float | bool | str | Mapping[str, FilterTypes]
+FilterTypes = int | float | bool | str | Mapping[str, "FilterTypes"]
 Filter = Mapping[str, FilterTypes]
 
 class Document:
@@ -168,11 +168,25 @@ class Binary:
     def subtype(self, subtype) -> None: ...
 
 class ObjectId:
-    def __init__(self, value: str) -> Self: ...
+    def __init__(self) -> Self: ...
     def __str__(self) -> str: ...
     def __repr__(self) -> str: ...
     @property
     def value(self) -> str: ...
+    @classmethod
+    def is_valid(cls: Self, value: str) -> bool: ...
+    @staticmethod
+    def from_str(value: str) -> Self: ...
+
+class PydanticObjectId:
+    @classmethod
+    def validate_object_id(cls, v: Any, handler) -> ObjectId: ...
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source_type, _handler
+    ) -> core_schema.CoreSchema: ...
+    @classmethod
+    def __get_pydantic_json_schema__(cls, _core_schema, handler): ...
 
 class Decimal128:
     def __str__(self) -> str: ...

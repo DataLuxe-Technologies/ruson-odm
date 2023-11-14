@@ -27,7 +27,6 @@ pub fn find_one<'a>(
     py: Python<'a>,
     collection: Collection,
     filter: Document,
-    skip: Option<u64>,
     sort: Option<Document>,
     projection: Option<Document>,
     timeout: Option<u64>,
@@ -49,7 +48,7 @@ pub fn find_one<'a>(
         let result = interface::find_one(
             collection.0,
             filter.0,
-            skip,
+            None,
             sort,
             projection,
             timeout,

@@ -5,7 +5,7 @@ use mongodb::{self, bson};
 use super::utils::PyNone;
 use pyo3::{
     prelude::*,
-    types::{PyBool, PyBytes, PyDateTime, PyFloat, PyInt, PyList, PyString},
+    types::{PyBool, PyBytes, PyDateTime, PyFloat, PyInt, PyList, PyString, PyType},
 };
 
 use super::document_binding::Document;
@@ -261,7 +261,14 @@ pub struct ObjectId {
 #[pymethods]
 impl ObjectId {
     #[new]
-    fn new(value: String) -> Self {
+    fn new() -> Self {
+        Self {
+            id: bson::oid::ObjectId::new().bytes(),
+        }
+    }
+
+    #[staticmethod]
+    fn from_str(value: String) -> Self {
         if value.len() != 24 {
             panic!("Value is not a valid ObjectId");
         }
@@ -279,6 +286,12 @@ impl ObjectId {
         let mut id: [u8; 12] = [0; 12];
         id.copy_from_slice(id_vec.unwrap().as_slice());
         Self { id }
+    }
+
+    #[classmethod]
+    fn is_valid(_cls: &PyType, value: String) -> bool {
+        let result = bson::oid::ObjectId::parse_str(value.as_str());
+        result.is_ok()
     }
 
     fn __repr__(&self) -> String {
@@ -514,30 +527,12 @@ impl<'source> FromPyObject<'source> for Bson {
                 increment: value.increment,
             })))
         } else if ob.is_instance_of::<PyDateTime>() {
-            let year = ob
-                .call_method("get_year", (), None)
-                .unwrap()
-                .extract::<i32>()?;
-            let month = ob
-                .call_method("get_month", (), None)
-                .unwrap()
-                .extract::<u8>()?;
-            let day = ob
-                .call_method("get_day", (), None)
-                .unwrap()
-                .extract::<u8>()?;
-            let hour = ob
-                .call_method("get_hour", (), None)
-                .unwrap()
-                .extract::<u8>()?;
-            let minute = ob
-                .call_method("get_minute", (), None)
-                .unwrap()
-                .extract::<u8>()?;
-            let second = ob
-                .call_method("get_second", (), None)
-                .unwrap()
-                .extract::<u8>()?;
+            let year = ob.getattr("year").unwrap().extract::<i32>()?;
+            let month = ob.getattr("month").unwrap().extract::<u8>()?;
+            let day = ob.getattr("day").unwrap().extract::<u8>()?;
+            let hour = ob.getattr("hour").unwrap().extract::<u8>()?;
+            let minute = ob.getattr("minute").unwrap().extract::<u8>()?;
+            let second = ob.getattr("second").unwrap().extract::<u8>()?;
 
             let builder = bson::DateTime::builder()
                 .year(year)

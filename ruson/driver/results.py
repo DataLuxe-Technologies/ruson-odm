@@ -51,6 +51,12 @@ class IndexesCursor:
     def __init__(self, binding_iterator) -> None:
         self.__binding_iterator = binding_iterator
 
+    async def tolist(self) -> list[IndexModel]:
+        result = []
+        async for item in self:
+            result.append(item)
+        return result
+
     def __aiter__(self) -> Self:
         return self
 

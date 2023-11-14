@@ -8,6 +8,8 @@ class Ruson:
 
     @classmethod
     async def create_connection(cls, config: Config) -> None:
+        if config.connection_name in cls._connections:
+            return
         client = await create_client(config.database_uri)
         cls._connections[config.connection_name] = (config, client)
 

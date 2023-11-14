@@ -1,19 +1,8 @@
 from datetime import datetime
-from pathlib import Path
-from typing import (
-    Awaitable,
-    Callable,
-    Literal,
-    Mapping,
-    Self,
-    Sequence,
-    Type,
-    TypeVar,
-    overload,
-)
+from typing import Awaitable, Callable, Literal, Mapping, Self, Type, TypeVar, overload
 
 import pytz
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from ..driver.collection import Collection, noop_formatter
 from ..driver.results import (
@@ -36,6 +25,7 @@ from ..driver.types import (
     IndexModel,
     ObjectId,
     Projection,
+    PydanticObjectId,
     Update,
     UpdateOperators,
 )
@@ -57,7 +47,7 @@ def _get_collection(
         db_name = config.database_name
 
     client = Ruson.get_client(conn_name)
-    db = client.database(config.database_name)
+    db = client.database(db_name)
     return db.collection(collection_name)
 
 
@@ -66,17 +56,20 @@ def _recurse_value(
 ) -> BaseTypes | Document | list[BaseTypes | Document]:
     if isinstance(value, Mapping):
         doc = Document()
-        for key, value in value.items():
-            doc[key] = _recurse_value(value)
+        for key, val in value.items():
+            doc[key] = _recurse_value(val)
         return doc
 
-    if isinstance(value, Sequence):
+    if isinstance(value, list):
         return [_recurse_value(v) for v in value]
 
     return value
 
 
 def documentify_filter(filter: Filter) -> Document:
+    if isinstance(filter, BaseModel):
+        filter = filter.model_dump(by_alias=True, exclude_unset=True)
+
     doc = Document()
     for key, value in filter.items():
         doc[key] = _recurse_value(value)
@@ -102,6 +95,9 @@ def documentify_projection(projection: Projection) -> Document:
 
 
 def documentify_document(document: DocumentTypes) -> Document:
+    if isinstance(document, BaseModel):
+        document = document.model_dump(by_alias=True, exclude_unset=True)
+
     doc = Document()
     for key, value in document.items():
         doc[key] = _recurse_value(value)
@@ -109,21 +105,40 @@ def documentify_document(document: DocumentTypes) -> Document:
 
 
 def documentify_update(update: Update) -> Document:
+    if isinstance(update, BaseModel):
+        update = update.model_dump(by_alias=True, exclude_unset=True)
+
     doc = Document()
     for operator, value in update.items():
         doc[operator] = _recurse_value(value)
     return doc
 
 
+def serialize_datetime(datetime: datetime) -> str:
+    return datetime.isoformat()
+
+
 class RusonDoc(BaseModel):
-    id: ObjectId = Field(alias="_id", default_factory=ObjectId)
+    id: PydanticObjectId = Field(alias="_id", default_factory=ObjectId)
     created_at: datetime = Field(default_factory=lambda: datetime.now(pytz.UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(pytz.UTC))
 
     model_config = ConfigDict(
-        json_encoders={ObjectId: str, datetime: lambda dt: dt.isoformat(), Path: str},
-        allow_population_by_field_name=True,
+        populate_by_name=True,
+        arbitrary_types_allowed=True,
     )
+
+    @field_serializer("id")
+    def serialize_id(self, value: PydanticObjectId) -> str:
+        return str(value)
+
+    @field_serializer("created_at")
+    def serialize_created_at(self, value: datetime) -> str:
+        return serialize_datetime(value)
+
+    @field_serializer("updated_at")
+    def serialize_updated_at(self, value: datetime) -> str:
+        return serialize_datetime(value)
 
     @classmethod
     def class_indexes(cls) -> list[IndexModel]:
@@ -256,7 +271,6 @@ class RusonDoc(BaseModel):
 
         return await self.find_one(
             filter=self,
-            skip=skip,
             sort=sort,
             projection=projection,
             timeout=timeout,
@@ -270,7 +284,6 @@ class RusonDoc(BaseModel):
     async def find_one(
         cls: Type[Self],
         filter: Filter,
-        skip: int | None = None,
         sort: list[FieldSort] | None = None,
         projection: Projection | Document | None = None,
         timeout: int | None = None,
@@ -289,7 +302,6 @@ class RusonDoc(BaseModel):
             projection = documentify_projection(projection)
         return await collection.find_one(
             filter=filter,
-            skip=skip,
             sort=sort,
             projection=projection,
             timeout=timeout,
