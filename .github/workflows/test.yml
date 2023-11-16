@@ -52,8 +52,7 @@ jobs:
               with:
                   python-version: "3.11"
 
-            - run: echo '${{ steps.cp311.outputs.python-path }}'
-            - run: echo '${{ env.pythonLocation}}'
+            - run: export VIRTUAL_ENV='${{ env.pythonLocation}}'
 
             - uses: PyO3/maturin-action@v1
               with:
