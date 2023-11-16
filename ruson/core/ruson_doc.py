@@ -184,7 +184,7 @@ class RusonDoc(BaseModel):
     @classmethod
     async def drop_indexes(
         cls: Type[Self],
-        indexes: list[str],
+        indexes: list[str] | None = None,
         timeout: int | None = None,
         db_name: str | None = None,
         conn_name: str | None = None,
@@ -456,20 +456,14 @@ class RusonDoc(BaseModel):
     ) -> UpdateResult:
         suffix = "Self will be used as filter if the operator is None."
         if operator is None:
-            if isinstance(update_or_filter, Filter):
-                raise ValueError(
-                    f"update_or_filter must be an update when using self as filter. {suffix}"
-                )
-
             update = documentify_update(update_or_filter)
-            filter = documentify_document(self.model_dump(by_alias=True))
+            filter = documentify_document(
+                self.model_dump(by_alias=True, exclude_unset=True)
+            )
         else:
-            if isinstance(update_or_filter, Update):
-                raise ValueError(
-                    f"update_or_filter must be a filter when using self as update. {suffix}"
-                )
-
-            update = documentify_update({operator: self.model_dump(by_alias=True)})
+            update = documentify_update(
+                {operator: self.model_dump(by_alias=True, exclude_unset=True)}
+            )
             filter = documentify_filter(update_or_filter)
 
         collection = _get_collection(
@@ -514,7 +508,7 @@ class RusonDoc(BaseModel):
     ) -> UpdateResult:
         filter = documentify_filter(filter)
         return await self.upsert_one(
-            update={"$set": self.model_dump(by_alias=True)},
+            update={"$set": self.model_dump(by_alias=True, exclude={"id"})},
             filter=filter,
             array_filters=array_filters,
             session=session,
