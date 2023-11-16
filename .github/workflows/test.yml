@@ -48,13 +48,12 @@ jobs:
                   fetch-depth: 0
 
             - uses: actions/setup-python@v4
+              id: cp311
               with:
                   python-version: "3.11"
 
-            - name: Install maturin
-              run: |
-                  python -m pip install --upgrade pip
-                  pip install maturin
+            - run: echo '${{ steps.cp311.outputs.python-path }}'
+            - run: echo '${{ env.pythonLocation}}'
 
             - uses: PyO3/maturin-action@v1
               with:
