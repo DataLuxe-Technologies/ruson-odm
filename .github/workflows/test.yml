@@ -52,7 +52,7 @@ jobs:
                   python-version: "3.11"
 
             - name: Install dependencies
-              run: pip install maturin && pip install .
+              run: pip install maturin && pip install .[test]
 
             - name: Start MongoDB
               uses: supercharge/mongodb-github-action@1.7.0
