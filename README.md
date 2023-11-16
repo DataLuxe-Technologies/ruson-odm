@@ -1,6 +1,6 @@
 # Ruson-ODM
 
-Ruson-ODM is an asynchronous object-document mapper for Python 3.6+. It is designed to be a lightweight and easy-to-use ODM for MongoDB.
+Ruson-ODM is an asynchronous object-document mapper for Python 3.11+. It is designed to be a lightweight and easy-to-use ODM for MongoDB.
 
 ## Usage
 
