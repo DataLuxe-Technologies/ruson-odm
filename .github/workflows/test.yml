@@ -40,6 +40,7 @@ jobs:
         name: Test Ruson
         needs: python-check, checkout
         runs-on: ubuntu-latest
+        steps:
             - name: Install dependencies
               run: pip install .
 
