@@ -12,20 +12,15 @@ on:
             - ".github/**"
     workflow_dispatch:
 
-
 jobs:
-    checkout:
+    python-check:
+        name: Static code check
+        runs-on: ubuntu-latest
         steps:
             - name: Checkout repo
               uses: actions/checkout@v4
               with:
                   fetch-depth: 0
-
-    python-check:
-        name: Static code check
-        runs-on: ubuntu-latest
-        needs: checkout
-        steps:
             - uses: actions/setup-python@v4
             - name: Install code check dependencies
               run: |
@@ -40,9 +35,13 @@ jobs:
 
     test:
         name: Test Ruson
-        needs: python-check, checkout
+        needs: python-check
         runs-on: ubuntu-latest
         steps:
+            - name: Checkout repo
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
             - uses: actions/setup-python@v4
             - name: Install dependencies
               run: pip install .
