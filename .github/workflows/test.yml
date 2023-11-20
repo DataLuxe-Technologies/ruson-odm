@@ -53,7 +53,7 @@ jobs:
                   python-version: "3.11"
 
             - name: Setup Python Virtual Env
-              run: python -m venv
+              run: python -m venv .
 
             - name: Setup Maturin Binding
               run: |
