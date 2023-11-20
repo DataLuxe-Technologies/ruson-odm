@@ -1,0 +1,76 @@
+name: "Test"
+
+on:
+    push:
+        branches-ignore:
+            - "master"
+        tags-ignore:
+            - "**"
+        paths:
+            - "ruson/**"
+            - "src/**"
+            - ".github/**"
+    workflow_dispatch:
+
+jobs:
+    python-check:
+        name: Static code check
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repo
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - uses: actions/setup-python@v4
+              with:
+                  python-version: "3.11"
+
+            - name: Install code check dependencies
+              run: |
+                  python -m pip install --upgrade pip
+                  pip install black isort
+
+            - name: "Check with <black>"
+              run: black --check ruson
+
+            - name: "Check with <isort>"
+              run: isort --profile black --check ruson
+
+    test:
+        name: Test Ruson
+        needs: python-check
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repo
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - uses: actions/setup-python@v4
+              id: cp311
+              with:
+                  python-version: "3.11"
+
+            - name: Setup Python Virtual Env
+              run: |
+                  python -m venv .
+
+            - name: Setup Maturin Binding
+              run: |
+                  source ./bin/activate
+                  ./bin/pip3 install maturin
+                  ./bin/python3 -m maturin develop -r
+
+            - name: Install dependencies
+              run: |
+                  source ./bin/activate
+                  ./bin/pip3 install .[test]
+
+            - name: Start MongoDB
+              uses: supercharge/mongodb-github-action@1.7.0
+
+            - name: Test
+              run: |
+                  source ./bin/activate
+                  ./bin/python3 -m pytest ./tests --disable-warnings
