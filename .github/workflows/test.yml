@@ -63,10 +63,14 @@ jobs:
                   ./bin/python3 -m maturin develop -r
 
             - name: Install dependencies
-              run: ./bin/pip3 install .[test]
+              run: |
+                  source ./bin/activate
+                  ./bin/pip3 install .[test]
 
             - name: Start MongoDB
               uses: supercharge/mongodb-github-action@1.7.0
 
             - name: Test
-              run: ./bin/python3 -m . --disable-warnings
+              run: |
+                  source ./bin/activate
+                  ./bin/python3 -m pytest . --disable-warnings
