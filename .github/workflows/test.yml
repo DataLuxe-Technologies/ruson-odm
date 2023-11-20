@@ -55,10 +55,10 @@ jobs:
             - name: Setup Python Virtual Env
               run: |
                   python -m venv .
-                  source ./bin/activate
 
             - name: Setup Maturin Binding
               run: |
+                  source ./bin/activate
                   ./bin/pip3 install maturin
                   ./bin/python3 -m maturin develop -r
 
