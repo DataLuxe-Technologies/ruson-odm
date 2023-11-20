@@ -73,4 +73,4 @@ jobs:
             - name: Test
               run: |
                   source ./bin/activate
-                  ./bin/python3 -m pytest . --disable-warnings
+                  ./bin/python3 -m pytest ./tests --disable-warnings
