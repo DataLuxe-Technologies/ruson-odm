@@ -52,18 +52,19 @@ jobs:
               with:
                   python-version: "3.11"
 
-            - run: export VIRTUAL_ENV='${{ env.pythonLocation}}'
+            - name: Setup Python Virtual Env
+              run: python -m venv
 
-            - uses: PyO3/maturin-action@v1
-              with:
-                  command: develop
-                  args: -r
+            - name: Setup Maturin Binding
+              run: |
+                  ./bin/pip3 install maturin
+                  ./bin/python3 -m maturin develop -r
 
             - name: Install dependencies
-              run: pip install .[test]
+              run: ./bin/pip3 install .[test]
 
             - name: Start MongoDB
               uses: supercharge/mongodb-github-action@1.7.0
 
             - name: Test
-              run: pytest . --disable-warnings
+              run: ./bin/python3 -m . --disable-warnings
