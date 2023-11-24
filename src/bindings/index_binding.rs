@@ -112,13 +112,8 @@ pub struct IndexModel {
 impl IndexModel {
     #[new]
     fn new(keys: HashMap<String, &PyAny>, options: Option<IndexOptions>) -> PyResult<Self> {
-        let mut document = Document::new();
-        for (k, v) in keys.into_iter() {
-            document.set(k, v)?;
-        }
-
         Ok(Self {
-            keys: document,
+            keys: Document::new(Some(keys))?,
             options,
         })
     }

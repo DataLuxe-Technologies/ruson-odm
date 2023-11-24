@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use mongodb::{self, bson};
 
 use pyo3::{self, exceptions, iter::IterNextOutput, prelude::*, types::PyString};
@@ -59,8 +61,15 @@ fn key_is_string(key: &PyAny) -> PyResult<()> {
 #[pymethods]
 impl Document {
     #[new]
-    pub fn new() -> Self {
-        Document(bson::Document::new())
+    pub fn new(dict: Option<HashMap<String, &PyAny>>) -> PyResult<Self> {
+        let mut doc = Document(bson::Document::new());
+        if let Some(dict) = dict {
+            for (k, v) in dict.into_iter() {
+                doc.set(k, v)?;
+            }
+        }
+
+        Ok(doc)
     }
 
     pub fn copy(&self) -> Self {
