@@ -8,7 +8,9 @@ Ruson-ODM is an asynchronous object-document mapper for Python 3.11+. It is desi
 
 Ruson-ODM is available to be installed from PyPi with:
 
-`pip install ruson`
+```bash
+pip install ruson
+``` 
 
 ## Usage
 
