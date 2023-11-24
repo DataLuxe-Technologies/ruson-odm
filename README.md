@@ -1,6 +1,14 @@
+[![PyPI version](https://badge.fury.io/py/ruson.svg)](https://badge.fury.io/py/ruson)
+
 # Ruson-ODM
 
 Ruson-ODM is an asynchronous object-document mapper for Python 3.11+. It is designed to be a lightweight and easy-to-use ODM for MongoDB.
+
+## Installation
+
+Ruson-ODM is available to be installed from PyPi with:
+
+`pip install ruson`
 
 ## Usage
 
