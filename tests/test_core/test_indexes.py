@@ -8,9 +8,7 @@ class IndexesDoc(RusonDoc):
 
     @classmethod
     def class_indexes(cls) -> list[IndexModel]:
-        keys = Document()
-        keys["another"] = 1
-        return [IndexModel(keys=keys, options=IndexOptions(unique=True))]
+        return [IndexModel(keys={"another": 1}, options=IndexOptions(unique=True))]
 
 
 async def test_create_indexes(setup_connection: None):
@@ -21,9 +19,7 @@ async def test_create_indexes(setup_connection: None):
 
 
 async def test_create_index(setup_connection: None):
-    keys = Document()
-    keys["even_another"] = 1
-    index = IndexModel(keys=keys, options=IndexOptions(unique=True))
+    index = IndexModel(keys={"even_another": 1}, options=IndexOptions(unique=True))
 
     result = await IndexesDoc.create_index(index)
     names = result.index_names

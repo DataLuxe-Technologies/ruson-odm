@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use pyo3::prelude::*;
 
 use super::document_binding::Document;
@@ -109,8 +111,11 @@ pub struct IndexModel {
 #[pymethods]
 impl IndexModel {
     #[new]
-    fn new(keys: Document, options: Option<IndexOptions>) -> Self {
-        Self { keys, options }
+    fn new(keys: HashMap<String, &PyAny>, options: Option<IndexOptions>) -> PyResult<Self> {
+        Ok(Self {
+            keys: Document::new(Some(keys), None)?,
+            options,
+        })
     }
 
     fn __repr__(&self) -> String {

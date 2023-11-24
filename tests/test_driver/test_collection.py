@@ -20,8 +20,7 @@ async def test_find_one(db_uri: str, db_name: str, collection_name: str):
     doc = await collection.find_one(Document())
     assert doc["name"] == "test"
 
-    filter = Document()
-    filter["name"] = "test"
+    filter = Document({"name": "test"})
     doc = await collection.find_one(filter=filter)
     assert doc["name"] == "test"
 
@@ -29,9 +28,7 @@ async def test_find_one(db_uri: str, db_name: str, collection_name: str):
     doc = await collection.find_one(filter=Document(), formatter=formatter)
     assert doc == "test"
 
-    projection = Document()
-    projection["_id"] = 0
-    projection["name"] = 1
+    projection = Document({"_id": 0, "name": 1})
     doc = await collection.find_one(filter=Document(), projection=projection)
     assert "_id" not in doc
     assert "name" in doc
@@ -54,8 +51,7 @@ async def test_find_many(db_uri: str, db_name: str, collection_name: str):
     docs = await (await collection.find_many()).tolist()
     assert len(docs) == 10
 
-    filter = Document()
-    filter["index"] = 2
+    filter = Document({"index": 2})
     docs = await (await collection.find_many(filter=filter)).tolist()
     assert len(docs) == 1
     doc = docs[0]
@@ -66,9 +62,7 @@ async def test_find_many(db_uri: str, db_name: str, collection_name: str):
     async for doc in docs:
         assert doc == "test"
 
-    projection = Document()
-    projection["_id"] = 0
-    projection["name"] = 1
+    projection = Document({"_id": 0, "name": 1})
     docs = await collection.find_many(projection=projection)
     async for doc in docs:
         assert "_id" not in doc
@@ -90,8 +84,7 @@ async def test_find_many(db_uri: str, db_name: str, collection_name: str):
     docs = await (await collection.find_many(limit=3)).tolist()
     assert len(docs) == 3
 
-    sort = Document()
-    sort["random"] = 1
+    sort = Document({"random": 1})
     collection = await get_collection(db_uri, db_name, collection_name)
     docs = await collection.find_many(sort=sort)
     prev = None
@@ -105,8 +98,7 @@ async def test_find_many(db_uri: str, db_name: str, collection_name: str):
 
 async def test_insert_one(db_uri: str, db_name: str, collection_name: str):
     collection = await get_collection(db_uri, db_name, collection_name)
-    doc = Document()
-    doc["name"] = "insert-one"
+    doc = Document({"name": "insert-one"})
 
     result = await collection.insert_one(doc)
     assert result.inserted_id
@@ -118,8 +110,7 @@ async def test_insert_one(db_uri: str, db_name: str, collection_name: str):
     client = await create_client(db_uri)
     session = await client.create_session()
     collection = client[db_name][collection_name]
-    doc = Document()
-    doc["name"] = "insert-one-with-session"
+    doc = Document({"name": "insert-one-with-session"})
 
     result = await collection.insert_one(doc, session=session)
     assert result.inserted_id
@@ -133,8 +124,7 @@ async def test_insert_many(db_uri: str, db_name: str, collection_name: str):
     collection = await get_collection(db_uri, db_name, collection_name)
     docs = []
     for i in range(3):
-        doc = Document()
-        doc["name"] = f"insert-many-{i}"
+        doc = Document({"name": f"insert-many-{i}"})
         docs.append(doc)
 
     result = await collection.insert_many(docs)
@@ -142,10 +132,7 @@ async def test_insert_many(db_uri: str, db_name: str, collection_name: str):
 
     str_inserted_ids = list(map(str, result.inserted_ids))
 
-    filter = Document()
-    inner_filter = Document()
-    inner_filter["$regex"] = "insert-many-*"
-    filter["name"] = inner_filter
+    filter = Document({"name": Document({"$regex": "insert-many-*"})})
     found_docs = await collection.find_many(filter=filter)
     async for found_doc in found_docs:
         assert str(found_doc["_id"]) in str_inserted_ids
@@ -155,8 +142,7 @@ async def test_insert_many(db_uri: str, db_name: str, collection_name: str):
     collection = client[db_name][collection_name]
     docs = []
     for i in range(3):
-        doc = Document()
-        doc["name"] = f"insert-with-session-many-{i}"
+        doc = Document({"name": f"insert-with-session-many-{i}"})
         docs.append(doc)
 
     result = await collection.insert_many(docs, session=session)
@@ -164,10 +150,7 @@ async def test_insert_many(db_uri: str, db_name: str, collection_name: str):
 
     str_inserted_ids = list(map(str, result.inserted_ids))
 
-    filter = Document()
-    inner_filter = Document()
-    inner_filter["$regex"] = "insert-with-session-many-*"
-    filter["name"] = inner_filter
+    filter = Document({"name": Document({"$regex": "insert-with-session-many-*"})})
     found_docs = await collection.find_many(filter=filter)
     async for found_doc in found_docs:
         assert str(found_doc["_id"]) in str_inserted_ids
@@ -175,54 +158,41 @@ async def test_insert_many(db_uri: str, db_name: str, collection_name: str):
 
 async def test_update_one(db_uri: str, db_name: str, collection_name: str):
     collection = await get_collection(db_uri, db_name, collection_name)
-    update_field = Document()
-    update_field["name"] = "update-one-test"
-    update = Document()
-    update["$set"] = update_field
+    update = Document({"$set": Document({"name": "update-one-test"})})
 
-    filter = Document()
-    filter["index"] = 1
+    filter = Document({"index": 1})
     result = await collection.update_one(update=update, filter=filter)
     assert result.matched_count == 1
     assert result.modified_count == 1
     assert result.upserted_id is None
 
     doc = await collection.find_one(filter=filter)
-    assert doc["name"] == update_field["name"]
+    assert doc["name"] == update["$set"]["name"]
 
     collection = await get_collection(db_uri, db_name, collection_name)
-    update_field = Document()
-    update_field["name"] = "upsert-one-test"
-    update = Document()
-    update["$set"] = update_field
 
-    filter = Document()
-    filter["index"] = 90
+    update = Document({"$set": Document({"name": "upsert-one-test"})})
+    filter = Document({"index": 90})
     result = await collection.update_one(update=update, filter=filter, upsert=True)
     assert result.matched_count == 0
     assert result.modified_count == 0
     assert result.upserted_id is not None
 
     doc = await collection.find_one(filter=filter)
-    assert doc["name"] == update_field["name"]
+    assert doc["name"] == update["$set"]["name"]
 
     client = await create_client(db_uri)
     session = await client.create_session()
     collection = client[db_name][collection_name]
-    update_field = Document()
-    update_field["name"] = "update-one-session-test"
-    update = Document()
-    update["$set"] = update_field
-
-    filter = Document()
-    filter["index"] = 1
+    update = Document({"$set": Document({"name": "update-one-session-test"})})
+    filter = Document({"index": 1})
     result = await collection.update_one(update=update, filter=filter, session=session)
     assert result.matched_count == 1
     assert result.modified_count == 1
     assert result.upserted_id is None
 
     doc = await collection.find_one(filter=filter)
-    assert doc["name"] == update_field["name"]
+    assert doc["name"] == update["$set"]["name"]
 
 
 async def test_delete_one(db_uri: str, db_name: str, collection_name: str):
@@ -249,10 +219,7 @@ async def test_delete_one(db_uri: str, db_name: str, collection_name: str):
 
 async def test_delete_many(db_uri: str, db_name: str, collection_name: str):
     collection = await get_collection(db_uri, db_name, collection_name)
-    inner_filter = Document()
-    inner_filter["$gte"] = 2
-    filter = Document()
-    filter["index"] = inner_filter
+    filter = Document({"index": Document({"$gte": 2})})
     result = await collection.delete_many(filter=filter)
 
     assert result.deleted_count == 8
@@ -264,10 +231,7 @@ async def test_delete_many(db_uri: str, db_name: str, collection_name: str):
     session = await client.create_session()
     collection = client[db_name][collection_name]
 
-    inner_filter = Document()
-    inner_filter["$lte"] = 2
-    filter = Document()
-    filter["index"] = inner_filter
+    filter = Document({"index": Document({"$lte": 2})})
     result = await collection.delete_many(filter=filter, session=session)
     assert result.deleted_count == 2
     docs = await (await collection.find_many()).tolist()
@@ -281,10 +245,7 @@ async def test_distinct(db_uri: str, db_name: str, collection_name: str):
     assert len(result) < 10
 
     collection = await get_collection(db_uri, db_name, collection_name)
-    inner_filter = Document()
-    inner_filter["$lt"] = 2
-    filter = Document()
-    filter["index"] = inner_filter
+    filter = Document({"index": Document({"$lt": 2})})
     result = await collection.distinct(field_name="index", filter=filter)
     assert len(result) == 2
     expected_indexes = [0, 1]
@@ -302,10 +263,8 @@ async def test_create_indexes(db_uri: str, db_name: str, collection_name: str):
     index_name = "test-create-indexes"
 
     collection = await get_collection(db_uri, db_name, collection_name)
-    index_keys = Document()
-    index_keys["index"] = 1
     index_options = IndexOptions(name=index_name, unique=True)
-    index = IndexModel(keys=index_keys, options=index_options)
+    index = IndexModel(keys={"index": 1}, options=index_options)
     result = await collection.create_indexes(indexes=[index])
     assert len(result.index_names) == 1
     assert result.index_names[0] in [index_name]
@@ -326,10 +285,8 @@ async def test_list_indexes(db_uri: str, db_name: str, collection_name: str):
 
 async def test_drop_indexes(db_uri: str, db_name: str, collection_name: str):
     collection = await get_collection(db_uri, db_name, collection_name)
-    index_keys = Document()
-    index_keys["index"] = 1
     index_options = IndexOptions(name="test-drop-indexes", unique=True)
-    index = IndexModel(keys=index_keys, options=index_options)
+    index = IndexModel(keys={"index": 1}, options=index_options)
     await collection.create_indexes(indexes=[index])
     indexes = await (await collection.list_indexes()).tolist()
     assert len(indexes) == 2
