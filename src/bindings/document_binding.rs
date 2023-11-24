@@ -116,15 +116,13 @@ impl Document {
         }
     }
 
-    pub fn set(&mut self, key: &PyAny, value: &PyAny) -> PyResult<()> {
-        key_is_string(key)?;
-        let key = key.extract::<String>()?;
+    pub fn set(&mut self, key: String, value: &PyAny) -> PyResult<()> {
         let value = Bson::extract(value)?.0;
         self.0.insert(key, value);
         Ok(())
     }
 
-    pub fn __setitem__(&mut self, key: &PyAny, value: &PyAny) -> PyResult<()> {
+    pub fn __setitem__(&mut self, key: String, value: &PyAny) -> PyResult<()> {
         self.set(key, value)
     }
 

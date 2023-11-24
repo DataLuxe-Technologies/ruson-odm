@@ -302,10 +302,8 @@ async def test_create_indexes(db_uri: str, db_name: str, collection_name: str):
     index_name = "test-create-indexes"
 
     collection = await get_collection(db_uri, db_name, collection_name)
-    index_keys = Document()
-    index_keys["index"] = 1
     index_options = IndexOptions(name=index_name, unique=True)
-    index = IndexModel(keys=index_keys, options=index_options)
+    index = IndexModel(keys={"index": 1}, options=index_options)
     result = await collection.create_indexes(indexes=[index])
     assert len(result.index_names) == 1
     assert result.index_names[0] in [index_name]
@@ -326,10 +324,8 @@ async def test_list_indexes(db_uri: str, db_name: str, collection_name: str):
 
 async def test_drop_indexes(db_uri: str, db_name: str, collection_name: str):
     collection = await get_collection(db_uri, db_name, collection_name)
-    index_keys = Document()
-    index_keys["index"] = 1
     index_options = IndexOptions(name="test-drop-indexes", unique=True)
-    index = IndexModel(keys=index_keys, options=index_options)
+    index = IndexModel(keys={"index": 1}, options=index_options)
     await collection.create_indexes(indexes=[index])
     indexes = await (await collection.list_indexes()).tolist()
     assert len(indexes) == 2
