@@ -2,9 +2,10 @@ use std::collections::HashMap;
 
 use mongodb::{self, bson};
 
-use pyo3::{self, exceptions, iter::IterNextOutput, prelude::*, types::PyString};
+use pyo3::{self, exceptions, iter::IterNextOutput, prelude::*, types::PyDict};
 
 use super::bson_binding::Bson;
+use super::utils::key_is_string;
 
 #[pyclass(sequence, module = "ruson.types")]
 #[repr(transparent)]
@@ -49,22 +50,22 @@ impl DocumentIter {
     }
 }
 
-fn key_is_string(key: &PyAny) -> PyResult<()> {
-    if !key.is_instance_of::<PyString>() {
-        return Err(PyErr::new::<exceptions::PyValueError, _>(
-            "Document keys must be strings".to_owned(),
-        ));
-    }
-    Ok(())
-}
-
 #[pymethods]
 impl Document {
     #[new]
-    pub fn new(dict: Option<HashMap<String, &PyAny>>) -> PyResult<Self> {
+    #[pyo3(signature = (dict=None, **kwargs))]
+    pub fn new(dict: Option<HashMap<String, &PyAny>>, kwargs: Option<&PyDict>) -> PyResult<Self> {
         let mut doc = Document(bson::Document::new());
         if let Some(dict) = dict {
             for (k, v) in dict.into_iter() {
+                doc.set(k, v)?;
+            }
+        }
+
+        if let Some(kwargs) = kwargs {
+            for (k, v) in kwargs.into_iter() {
+                key_is_string(k)?;
+                let k = k.extract::<String>()?;
                 doc.set(k, v)?;
             }
         }

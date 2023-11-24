@@ -113,7 +113,7 @@ impl IndexModel {
     #[new]
     fn new(keys: HashMap<String, &PyAny>, options: Option<IndexOptions>) -> PyResult<Self> {
         Ok(Self {
-            keys: Document::new(Some(keys))?,
+            keys: Document::new(Some(keys), None)?,
             options,
         })
     }

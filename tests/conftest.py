@@ -39,7 +39,7 @@ async def setup_test_db(
     collection = db.collection(collection_name)
     await collection.drop()
     for i in range(10):
-        doc = Document({"name": "test", "index": i, "random": random.randrange(0, 10)})
+        doc = Document(name="test", index=i, random=random.randrange(0, 10))
         await collection.insert_one(doc)
 
 
