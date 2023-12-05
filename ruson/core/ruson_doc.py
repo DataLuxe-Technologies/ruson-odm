@@ -454,12 +454,9 @@ class RusonDoc(BaseModel):
         db_name: str | None = None,
         conn_name: str | None = None,
     ) -> UpdateResult:
-        suffix = "Self will be used as filter if the operator is None."
         if operator is None:
             update = documentify_update(update_or_filter)
-            filter = documentify_document(
-                self.model_dump(by_alias=True, exclude_unset=True)
-            )
+            filter = documentify_filter(self)
         else:
             update = documentify_update(
                 {operator: self.model_dump(by_alias=True, exclude_unset=True)}
