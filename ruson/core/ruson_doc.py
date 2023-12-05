@@ -128,15 +128,15 @@ class RusonDoc(BaseModel):
         arbitrary_types_allowed=True,
     )
 
-    @field_serializer("id")
+    @field_serializer("id", when_used="json")
     def serialize_id(self, value: PydanticObjectId) -> str:
         return str(value)
 
-    @field_serializer("created_at")
+    @field_serializer("created_at", when_used="json")
     def serialize_created_at(self, value: datetime) -> str:
         return serialize_datetime(value)
 
-    @field_serializer("updated_at")
+    @field_serializer("updated_at", when_used="json")
     def serialize_updated_at(self, value: datetime) -> str:
         return serialize_datetime(value)
 
