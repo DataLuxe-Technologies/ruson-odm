@@ -96,7 +96,7 @@ def documentify_projection(projection: Projection) -> Document:
 
 def documentify_document(document: DocumentTypes) -> Document:
     if isinstance(document, BaseModel):
-        document = document.model_dump(by_alias=True, exclude_unset=True)
+        document = document.model_dump(by_alias=True)
 
     doc = Document()
     for key, value in document.items():
