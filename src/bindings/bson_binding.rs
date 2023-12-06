@@ -444,7 +444,8 @@ impl IntoPy<PyObject> for Bson {
             }
             bson::Bson::ObjectId(v) => ObjectId { id: v.bytes() }.into_py(py),
             bson::Bson::DateTime(v) => {
-                let value = PyDateTime::from_timestamp(py, v.timestamp_millis() as f64, None);
+                let timestamp = v.timestamp_millis() as f64 / 60.0;
+                let value = PyDateTime::from_timestamp(py, timestamp, None);
                 match value {
                     Ok(v) => v.into_py(py),
                     Err(e) => e.into_py(py),
