@@ -96,7 +96,7 @@ def documentify_projection(projection: Projection) -> Document:
 
 def documentify_document(document: DocumentTypes) -> Document:
     if isinstance(document, BaseModel):
-        document = document.model_dump(by_alias=True, exclude_unset=True)
+        document = document.model_dump(by_alias=True)
 
     doc = Document()
     for key, value in document.items():
@@ -128,15 +128,15 @@ class RusonDoc(BaseModel):
         arbitrary_types_allowed=True,
     )
 
-    @field_serializer("id")
+    @field_serializer("id", when_used="json")
     def serialize_id(self, value: PydanticObjectId) -> str:
         return str(value)
 
-    @field_serializer("created_at")
+    @field_serializer("created_at", when_used="json")
     def serialize_created_at(self, value: datetime) -> str:
         return serialize_datetime(value)
 
-    @field_serializer("updated_at")
+    @field_serializer("updated_at", when_used="json")
     def serialize_updated_at(self, value: datetime) -> str:
         return serialize_datetime(value)
 
@@ -454,12 +454,9 @@ class RusonDoc(BaseModel):
         db_name: str | None = None,
         conn_name: str | None = None,
     ) -> UpdateResult:
-        suffix = "Self will be used as filter if the operator is None."
         if operator is None:
             update = documentify_update(update_or_filter)
-            filter = documentify_document(
-                self.model_dump(by_alias=True, exclude_unset=True)
-            )
+            filter = documentify_filter(self)
         else:
             update = documentify_update(
                 {operator: self.model_dump(by_alias=True, exclude_unset=True)}
