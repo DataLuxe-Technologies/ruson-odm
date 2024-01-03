@@ -62,7 +62,9 @@ UpdateOperators = Literal[
 
 Update = Mapping[UpdateOperators, Mapping[str, CollectionTypes | BaseTypes]]
 
-FilterTypes = int | float | bool | str | Mapping[str, "FilterTypes"] | Sequence["FilterTypes"]
+FilterTypes = (
+    int | float | bool | str | Mapping[str, "FilterTypes"] | Sequence["FilterTypes"]
+)
 Filter = Mapping[str, FilterTypes]
 
 class Document:
