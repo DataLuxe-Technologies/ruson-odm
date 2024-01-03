@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Iterable, List, Literal, Mapping, Self
+from typing import Any, Callable, Iterable, List, Literal, Mapping, Self, Sequence
 
 from pydantic_core import core_schema
 
@@ -62,7 +62,9 @@ UpdateOperators = Literal[
 
 Update = Mapping[UpdateOperators, Mapping[str, CollectionTypes | BaseTypes]]
 
-FilterTypes = int | float | bool | str | Mapping[str, "FilterTypes"]
+FilterTypes = (
+    int | float | bool | str | Mapping[str, "FilterTypes"] | Sequence["FilterTypes"]
+)
 Filter = Mapping[str, FilterTypes]
 
 class Document:
