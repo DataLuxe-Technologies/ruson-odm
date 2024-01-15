@@ -186,11 +186,28 @@ impl Document {
         }
     }
 
-    // pub fn update(&mut self, _other: &PyMapping) -> PyResult<()> {
-    //     todo!()
-    // }
+    pub fn as_dict(&self) -> PyObject {
+        Python::with_gil(|py| {
+            let dict = PyDict::new(py);
+            for (key, val) in self.0.iter() {
+                let object_value = format_bson(py, val);
+                let _ = dict.set_item(key, object_value);
+            }
+            dict.into()
+        })
+    }
+}
 
-    // pub fn update_if_missing(&mut self, _other: &PyMapping) -> PyResult<()> {
-    //     todo!()
-    // }
+fn format_bson(py: Python<'_>, value: &bson::Bson) -> PyObject {
+    match value {
+        bson::Bson::Document(x) => Document(x.clone()).as_dict(),
+        bson::Bson::Array(x) => {
+            let mut formatted_x = Vec::with_capacity(x.len());
+            for value in x {
+                formatted_x.push(format_bson(py, value));
+            }
+            formatted_x.into_py(py)
+        }
+        _ => Bson(value.clone()).into_py(py),
+    }
 }
