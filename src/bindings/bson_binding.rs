@@ -1,11 +1,11 @@
-use std::{fmt::Display, num::ParseIntError};
+use std::{fmt::Display, num::ParseIntError, time::SystemTime};
 
 use mongodb::{self, bson};
 
 use super::utils::PyNone;
 use pyo3::{
     prelude::*,
-    types::{PyBool, PyBytes, PyDateTime, PyFloat, PyInt, PyList, PyString, PyType},
+    types::{timezone_utc, PyBool, PyBytes, PyDateTime, PyFloat, PyInt, PyList, PyString, PyType},
 };
 
 use super::document_binding::Document;
@@ -444,8 +444,12 @@ impl IntoPy<PyObject> for Bson {
             }
             bson::Bson::ObjectId(v) => ObjectId { id: v.bytes() }.into_py(py),
             bson::Bson::DateTime(v) => {
-                let timestamp = v.timestamp_millis() as f64 / 60.0;
-                let value = PyDateTime::from_timestamp(py, timestamp, None);
+                let duration = v
+                    .to_system_time()
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap();
+                let timestamp = duration.as_secs_f64();
+                let value = PyDateTime::from_timestamp(py, timestamp, Some(timezone_utc(py)));
                 match value {
                     Ok(v) => v.into_py(py),
                     Err(e) => e.into_py(py),
