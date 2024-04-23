@@ -54,6 +54,9 @@ def _get_collection(
 def _recurse_value(
     value: BaseTypes | CollectionTypes,
 ) -> BaseTypes | Document | list[BaseTypes | Document]:
+    if isinstance(value, bytes):
+        return list(value)
+
     if isinstance(value, Mapping):
         doc = Document()
         for key, val in value.items():
@@ -207,8 +210,7 @@ class RusonDoc(BaseModel):
         session: Session | None = None,
         db_name: str | None = None,
         conn_name: str | None = None,
-    ) -> T:
-        ...
+    ) -> T: ...
 
     @overload
     async def find(
@@ -223,8 +225,7 @@ class RusonDoc(BaseModel):
         session: Session | None = None,
         db_name: str | None = None,
         conn_name: str | None = None,
-    ) -> DocumentsCursor[T]:
-        ...
+    ) -> DocumentsCursor[T]: ...
 
     @overload
     async def find(
@@ -239,8 +240,7 @@ class RusonDoc(BaseModel):
         session: Session | None = None,
         db_name: str | None = None,
         conn_name: str | None = None,
-    ) -> T:
-        ...
+    ) -> T: ...
 
     async def find(
         self: Self,
